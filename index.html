@@ -2037,7 +2037,13 @@ document.addEventListener('click', async ev => {
     </form>`;
     $('#dlg').showModal(); setTimeout(() => $('#pw1').focus(), 0);
   }
-  else if(act === 'logout'){ if(sb) await sb.auth.signOut(); location.reload(); }
+  else if(act === 'logout'){
+    // Local sign-out never needs the network; then clear any leftover session keys so the reload lands on the login screen.
+    b.disabled = true; b.textContent = 'Saindo…';
+    try { if(sb) await sb.auth.signOut({scope: 'local'}); } catch(e){}
+    try { Object.keys(localStorage).filter(k => /^sb-.*auth-token/.test(k)).forEach(k => localStorage.removeItem(k)); } catch(e){}
+    location.replace(location.pathname);
+  }
   else if(act === 'notif-chat'){ $('#bellpop').hidden = true; openChat(); }
   else if(act === 'chat-open'){ openChat(); }
   else if(act === 'chat-close'){ closeChat(); }
