@@ -294,6 +294,16 @@ dialog{border-radius:20px;border:3px solid var(--ink);box-shadow:8px 8px 0 var(-
 .songs .n{color:var(--accent);font-weight:700}
 #toast{border-radius:999px}
 
+/* Task rows inside grey panels (Início, event Informações): white base so undated tasks still stand out. */
+.tlist-mini{display:grid;gap:8px}
+.card .todo,.dbody .todo{background:var(--surface)}
+.card .todo.dl-ok,.dbody .todo.dl-ok{background:var(--dl-ok)}
+.card .todo.dl-soon,.dbody .todo.dl-soon{background:var(--dl-soon)}
+.card .todo.dl-late,.dbody .todo.dl-late{background:var(--dl-late)}
+.dbody .todo + .todo{margin-top:8px}
+.todo .tbody .row{gap:5px}
+.todo .chip{white-space:normal;max-width:100%}
+
 /* ---- Mobile: compact header, bottom tab bar, full-screen sheets, quieter cards ---- */
 #bnav{display:none;position:fixed;left:0;right:0;bottom:0;z-index:20;grid-template-columns:repeat(4,1fr);background:var(--surface);border-top:2px solid var(--ink);padding:4px max(8px,env(safe-area-inset-right,0px)) calc(4px + env(safe-area-inset-bottom,0px)) max(8px,env(safe-area-inset-left,0px))}
 #bnav button{border:0;background:none;display:grid;justify-items:center;gap:3px;padding:7px 0 5px;font-family:var(--f-display);font-weight:400;text-transform:uppercase;letter-spacing:.05em;font-size:12px;color:var(--muted);cursor:pointer;border-radius:10px}
@@ -340,7 +350,10 @@ dialog{border-radius:20px;border:3px solid var(--ink);box-shadow:8px 8px 0 var(-
   .tadd{border-radius:14px;padding:8px}
   .tadd .btn{display:none}
   .tadd input{padding:11px 16px}
-  .todo{padding:12px;border-radius:12px;gap:10px}
+  .todo{padding:12px;border-radius:12px;gap:10px;align-items:flex-start}
+  .todo .tt,.todo.dl-ok .tt,.todo.dl-soon .tt,.todo.dl-late .tt{font-size:15px;line-height:1.3}
+  .todo .check{width:24px;height:24px}
+  .card .tlist-mini{margin:0 -4px}
   .tgroup h3{font-size:19px}
   .dl-legend{margin:-8px 0 16px}
   .pfoot{padding-block:16px 6px;gap:10px;border-top-width:1px}
@@ -395,7 +408,8 @@ dialog{border-radius:20px;border:3px solid var(--ink);box-shadow:8px 8px 0 var(-
 .todo.dl-ok .chip,.todo.dl-late .chip{background:rgba(255,255,255,.2);color:#FFFFFF}
 .todo.dl-soon .chip{background:rgba(0,0,0,.09);color:#1A1400}
 .todo.dl-ok .chip[class*="dl-"],.todo.dl-soon .chip[class*="dl-"],.todo.dl-late .chip[class*="dl-"]{background:#0B0B0C;color:#FFFFFF;font-size:12px}
-.todo.dl-ok .check,.todo.dl-soon .check,.todo.dl-late .check{background:transparent;border-color:currentColor;color:transparent}
+.todo.dl-ok .check,.todo.dl-late .check{background:rgba(255,255,255,.15);border-color:#FFFFFF;color:transparent}
+.todo.dl-soon .check{background:rgba(255,255,255,.35);border-color:#1A1400;color:transparent}
 .todo.dl-ok .check:hover,.todo.dl-soon .check:hover,.todo.dl-late .check:hover{background:#FFFFFF;color:#0B0B0C;border-color:#FFFFFF}
 .todo.dl-ok:hover,.todo.dl-soon:hover,.todo.dl-late:hover{border-color:#0B0B0C}
 .dl-legend{margin:-10px 0 20px;gap:6px}
@@ -722,9 +736,10 @@ function prazoChip(t){
   if(!t.prazo) return '';
   const st = prazoState(t), n = daysUntil(t.prazo);
   const dia = k => k === 1 ? '1 dia' : `${k} dias`;
-  const txt = st === 'late' ? `Atrasada há ${dia(-n)} · ${fmtD(t.prazo)}`
-    : st === 'soon' ? `${n === 0 ? 'Vence hoje' : n === 1 ? 'Vence amanhã' : `Faltam ${dia(n)}`} · ${fmtD(t.prazo)}`
-    : st === 'ok' ? `Faltam ${dia(n)} · ${fmtD(t.prazo)}` : fmtD(t.prazo);
+  const dm = t.prazo.slice(8, 10) + '/' + t.prazo.slice(5, 7);
+  const txt = st === 'late' ? `Atrasada há ${dia(-n)} · ${dm}`
+    : st === 'soon' ? `${n === 0 ? 'Vence hoje' : n === 1 ? 'Vence amanhã' : `Faltam ${dia(n)}`} · ${dm}`
+    : st === 'ok' ? `Faltam ${dia(n)} · ${dm}` : fmtD(t.prazo);
   return `<span class="chip mono${st ? ' dl-' + st : ''}">${esc(txt)}</span>`;
 }
 
@@ -1064,7 +1079,7 @@ const VIEWS = {
       <div class="stack">
         <section class="card">
           <div class="sect-h"><h3>Tarefas abertas</h3><span class="count">${open.length}${late ? ` · ${late} atrasada${late>1?'s':''}` : ''}</span></div>
-          ${open.length ? `<div class="list">${open.slice(0,5).map(x => `<div data-act="topen" data-id="${esc(x.id)}" style="cursor:pointer"><span class="t">${esc(x.titulo)}${x.responsavel ? ` <span class="muted">· ${esc(x.responsavel)}</span>` : ''}</span>${prazoChip(x)}</div>`).join('')}</div>` : '<p class="muted" style="margin:0">Nenhuma tarefa pendente.</p>'}
+          ${open.length ? `<div class="tlist-mini">${[...open].sort(taskSort).slice(0,5).map(todoRow).join('')}</div>` : '<p class="muted" style="margin:0">Nenhuma tarefa pendente.</p>'}
           <div style="margin-top:10px"><button class="btn ghost" data-act="tab" data-tab="tarefas">Abrir quadro de tarefas</button></div>
         </section>
         <section class="card">
