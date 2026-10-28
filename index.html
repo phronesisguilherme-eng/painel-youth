@@ -345,6 +345,7 @@ dialog{border-radius:20px;border:3px solid var(--ink);box-shadow:8px 8px 0 var(-
 .msg.me .mention{color:#fff;text-decoration:underline;font-weight:700}
 .mtime{justify-self:end;font-family:var(--f-mono);font-size:10px;opacity:.7}
 .mdel{border:0;background:none;color:inherit;font:inherit;padding:0 0 0 4px;cursor:pointer;text-decoration:underline;opacity:.85}
+.chat-mlist{margin:0 12px 6px;max-height:190px;overflow-y:auto}
 .chat-compose{display:flex;gap:8px;align-items:flex-end;padding:10px 12px;border-top:1px solid var(--line);background:var(--surface)}
 .chat-compose textarea{flex:1;min-width:0;resize:none;border:2px solid var(--ink);border-radius:20px;padding:9px 14px;background:var(--bg);font:inherit;line-height:1.35;max-height:140px}
 .chat-compose textarea:focus{outline:none;border-color:var(--accent)}
@@ -1378,6 +1379,7 @@ function chatView(){
   return `<div id="chatwrap">
     <div class="chat-head"><div><h2>Chat da equipe</h2><span class="muted chat-as">Você aparece como <b id="chat-me">${esc(myName())}</b> · <button type="button" class="linkbtn" data-act="chat-name">trocar nome</button></span></div>${close}</div>
     <div id="chatlist" role="log" aria-live="polite" aria-label="Mensagens"></div>
+    <div class="mlist chat-mlist" id="chat-mlist" hidden></div>
     <form id="chatform" class="chat-compose" novalidate>
       <textarea id="chat-text" rows="1" maxlength="2000" placeholder="Mensagem (use @nome)" aria-label="Mensagem"></textarea>
       <button type="submit" class="chat-send" aria-label="Enviar"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12h14M13 6l6 6-6 6"/></svg></button>
@@ -1386,7 +1388,7 @@ function chatView(){
 }
 // Highlight @Full Name for people the panel knows, then any other single-word @mention.
 const chatText = t => {
-  const names = [...new Set([...knownPeople(), ...chatMsgs.map(m => m.autor_nome), getMe()].filter(Boolean))];
+  const names = [...new Set([...knownPeople(), ...chatMsgs.map(m => m.autor_nome), myName()].filter(Boolean))];
   return withMentions(t, names).replace(/(^|[\s(])(@[\p{L}][\p{L}\p{N}._-]*)/gu, '$1<span class="mention">$2</span>');
 };
 function renderChatList(toBottom){
@@ -1424,7 +1426,7 @@ document.addEventListener('submit', ev => { if(ev.target.id === 'chatform'){ ev.
 document.addEventListener('keydown', ev => {
   if(ev.target.id === 'chat-text' && ev.key === 'Enter' && !ev.shiftKey && !matchMedia('(max-width: 640px)').matches){ ev.preventDefault(); sendChat(); }
 });
-document.addEventListener('input', ev => { if(ev.target.id === 'chat-text'){ const t = ev.target; t.style.height = 'auto'; t.style.height = Math.min(t.scrollHeight, 140) + 'px'; } });
+document.addEventListener('input', ev => { if(ev.target.id === 'chat-text'){ const t = ev.target; t.style.height = 'auto'; t.style.height = Math.min(t.scrollHeight, 140) + 'px'; renderMentionList(t); } });
 
 /* Home: one of the next three agenda items, with its ordem status and teams at a glance. */
 function homeEventCard(it, first){
@@ -1778,12 +1780,19 @@ function withMentions(text, names){
   return h.replace(/\u0000(\d+)\u0000/g, (_, i) => `<span class="mention">${marks[i]}</span>`);
 }
 function mentionQuery(ta){ const m = ta.value.slice(0, ta.selectionStart).match(/@([^@\n]{0,40})$/); return m ? m[1] : null; }
+// Shared @-picker: event Observações (#obs-text → #mlist) and the team chat (#chat-text → #chat-mlist).
+let mentionTa = null;
+const mentionBox = ta => ta && ta.id === 'chat-text' ? $('#chat-mlist') : $('#mlist');
+const mentionPeople = ta => ta && ta.id === 'chat-text'
+  ? [...new Set([...knownPeople(), ...chatMsgs.map(m => m.autor_nome).filter(Boolean)])].filter(n => norm(n) !== norm(myName())).sort((a, b) => a.localeCompare(b, 'pt'))
+  : knownPeople();
 function renderMentionList(ta){
-  const box = $('#mlist'); if(!box) return;
+  mentionTa = ta;
+  const box = mentionBox(ta); if(!box) return;
   const q = mentionQuery(ta);
   if(q === null){ box.hidden = true; return; }
   const nq = norm(q);
-  const opts = knownPeople().filter(n => !nq || norm(n).startsWith(nq) || norm(n).split(' ').some(w => w.startsWith(nq))).slice(0, 6);
+  const opts = mentionPeople(ta).filter(n => !nq || norm(n).startsWith(nq) || norm(n).split(' ').some(w => w.startsWith(nq))).slice(0, 6);
   if(!opts.length && /\s/.test(q)){ box.hidden = true; return; }
   const exact = opts.some(n => norm(n) === nq);
   box.innerHTML = opts.map(n => `<button type="button" data-act="pick" data-name="${esc(n)}">@${esc(n)}</button>`).join('')
@@ -1792,14 +1801,14 @@ function renderMentionList(ta){
   box.hidden = false;
 }
 function pickMention(name){
-  const ta = $('#obs-text'); if(!ta) return;
+  const ta = mentionTa && mentionTa.isConnected ? mentionTa : $('#obs-text'); if(!ta) return;
   const q = mentionQuery(ta); if(q === null) return;
   const pos = ta.selectionStart, start = pos - q.length - 1;
   ta.value = ta.value.slice(0, start) + '@' + name + ' ' + ta.value.slice(pos);
   const caret = start + name.length + 2;
   ta.focus(); ta.setSelectionRange(caret, caret);
-  detailCtx.picked = [...(detailCtx.picked || []), name]; detailCtx.obsDirty = true;
-  $('#mlist').hidden = true;
+  if(ta.id === 'obs-text' && detailCtx){ detailCtx.picked = [...(detailCtx.picked || []), name]; detailCtx.obsDirty = true; }
+  const box = mentionBox(ta); if(box) box.hidden = true;
 }
 
 let meMem = null, seenMem = [];
@@ -1814,7 +1823,8 @@ function myMentions(){
   return agendaItems().filter(it => (it.rec.marcados || []).some(n => norm(n) === k)).map(it => ({it, key: mentionKey(it)}));
 }
 function myChatMentions(){
-  const me = getMe(); if(!me || !sbUser) return [];
+  if(!sbUser) return [];
+  const me = myName(); if(!me) return [];
   const full = '@' + norm(me), first = '@' + norm(me).split(' ')[0];
   return chatMsgs.filter(m => lower(m.autor_email) !== lower(sbUser.email) && (norm(m.texto).includes(full) || new RegExp(first.replace(/[.*+?^${}()|[\]\\]/g, '\\$&') + '(?![\\p{L}\\p{N}])', 'u').test(norm(m.texto))))
     .map(m => ({msg: m, key: 'chat:' + m.id}));
@@ -1836,7 +1846,7 @@ function renderBell(){
           <span style="font-size:13px;overflow-wrap:anywhere">${esc((m.it.rec.observacoes || '').slice(0, 110))}${(m.it.rec.observacoes || '').length > 110 ? '…' : ''}</span>
         </button>`).join('')}`
       : chatList.length ? '' : '<p class="muted" style="margin:0;font-size:14px">Nenhuma marcação para você ainda.</p>'}
-    ${me && chatList.length ? `<div class="eyebrow">No chat da equipe</div>${chatList.slice(-8).reverse().map(m => { const novo = !seen.includes(m.key); return `<button type="button" class="notif ${novo ? 'unread' : ''}" data-act="notif-chat">
+    ${chatList.length ? `<div class="eyebrow">No chat da equipe</div>${chatList.slice(-8).reverse().map(m => { const novo = !seen.includes(m.key); return `<button type="button" class="notif ${novo ? 'unread' : ''}" data-act="notif-chat">
         <span class="row" style="justify-content:space-between"><b>${esc(m.msg.autor_nome || m.msg.autor_email.split('@')[0])}</b>${novo ? '<span class="chip ok">Nova</span>' : ''}</span>
         <span class="muted mono">${esc(chatTime(m.msg.criado_em, true))}</span>
         <span style="font-size:13px;overflow-wrap:anywhere">${esc(m.msg.texto.slice(0, 110))}${m.msg.texto.length > 110 ? '…' : ''}</span>
@@ -2011,6 +2021,7 @@ async function cultoPdf(c){
 document.addEventListener('click', async ev => {
   if(!ev.target.closest('.bellwrap')) $('#bellpop').hidden = true;
   if(!ev.target.closest('#mlist, #obs-text') && $('#mlist')) $('#mlist').hidden = true;
+  if(!ev.target.closest('#chat-mlist, #chat-text') && $('#chat-mlist')) $('#chat-mlist').hidden = true;
   const b = ev.target.closest('[data-act]'); if(!b) return;
   const act = b.dataset.act;
   if(act === 'tab'){ tab = b.dataset.tab; try{ localStorage.setItem('youth-tab', tab); }catch(e){} render(); window.scrollTo(0,0); }
