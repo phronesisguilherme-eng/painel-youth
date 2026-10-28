@@ -311,7 +311,14 @@ dialog{border-radius:20px;border:3px solid var(--ink);box-shadow:8px 8px 0 var(-
 #chatfab:hover{transform:rotate(30deg) scale(1.06)}
 #chatfab:focus-visible{outline:2px solid #0B0B0C;outline-offset:4px;border-radius:50%}
 @media (prefers-reduced-motion:reduce){#chatfab{transition:none}#chatfab:hover{transform:none}}
-#chatfab .cbadge{position:absolute;top:-2px;right:-4px}
+#chatfab .cbadge{position:absolute;top:-4px;right:-6px;background:#FFD004;color:#0B0B0C;border-color:#0B0B0C;min-width:24px;height:24px;font-size:12px}
+#chatfab.has-new{animation:fab-pulse 1.6s ease-in-out infinite}
+#chatfab.has-new::after{content:"";position:absolute;inset:-6px;border-radius:50%;border:3px solid #FFD004;animation:fab-ring 1.6s ease-out infinite;pointer-events:none}
+#chatfab.bump{animation:fab-bump .6s ease-out, fab-pulse 1.6s ease-in-out .6s infinite}
+@keyframes fab-pulse{0%,100%{transform:scale(1) rotate(0)}50%{transform:scale(1.12) rotate(20deg)}}
+@keyframes fab-ring{0%{opacity:.9;transform:scale(.7)}100%{opacity:0;transform:scale(1.35)}}
+@keyframes fab-bump{0%{transform:scale(1)}30%{transform:scale(1.35) rotate(-25deg)}60%{transform:scale(.95) rotate(15deg)}100%{transform:scale(1)}}
+@media (prefers-reduced-motion:reduce){#chatfab.has-new,#chatfab.bump{animation:none}#chatfab.has-new::after{animation:none;opacity:1;transform:none}}
 #chatfab-x{position:absolute;top:-6px;left:-8px;width:22px;height:22px;border-radius:50%;border:2px solid #FFFFFF;background:#0B0B0C;color:#FFFFFF;font-size:14px;line-height:1;display:grid;place-items:center;cursor:pointer;padding:0}
 #chatfab-x:hover{background:#E8003F}
 .cbadge{display:inline-grid;place-items:center;min-width:20px;height:20px;padding:0 5px;border-radius:999px;background:#0B0B0C;color:#fff;font:700 11px/1 var(--f-mono);border:2px solid #FFFFFF}
@@ -1353,10 +1360,17 @@ function markChatSeen(){
   chatSeenMem = last; try { localStorage.setItem('youth-chat-seen', last); } catch(e){}
   chatMsgs.forEach(m => { if(myChatMentions().some(x => x.msg.id === m.id)) markSeen('chat:' + m.id); });
 }
+let lastUnread = -1;
 function updateChatBadge(){
   const seenAt = chatSeenAt(), me = sbUser ? lower(sbUser.email) : '';
   const n = chatOpen ? 0 : chatMsgs.filter(m => lower(m.autor_email) !== me && String(m.criado_em) > seenAt).length;
   document.querySelectorAll('.cbadge').forEach(b => { b.textContent = n > 99 ? '99+' : n; b.hidden = !n; });
+  // Make new messages hard to miss: the asterisk pulses, the tab title counts, and the installed app icon gets a badge.
+  const fab = $('#chatfab'); if(fab){ fab.classList.toggle('has-new', n > 0); fab.setAttribute('aria-label', n ? `Abrir chat da equipe: ${n} mensagem${n > 1 ? 's' : ''} nova${n > 1 ? 's' : ''}` : 'Abrir chat da equipe'); }
+  const base = 'Painel Youth'; document.title = n ? `(${n}) ${base}` : base;
+  try { if(navigator.setAppBadge) n ? navigator.setAppBadge(n) : navigator.clearAppBadge(); } catch(e){}
+  if(n > lastUnread && lastUnread >= 0 && fab && !chatOpen){ fab.classList.remove('bump'); void fab.offsetWidth; fab.classList.add('bump'); }
+  lastUnread = n;
 }
 function chatView(){
   const close = '<button type="button" class="x chat-x" data-act="chat-close" aria-label="Fechar o chat">×</button>';
