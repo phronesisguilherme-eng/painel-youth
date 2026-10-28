@@ -1,0 +1,1603 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="theme-color" content="#FBF9F4">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="Youth">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="icon" href="icon-192.png">
+<link rel="apple-touch-icon" href="icon-180.png">
+<style>:root{color-scheme:light;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}body{margin:0;font:14px/1.4 system-ui,sans-serif}img{max-width:100%}[hidden]{display:none!important}</style>
+<script src="config.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.min.js"></script>
+</head>
+<body><title>Painel Youth</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Anton&family=Poppins:wght@400;500;600;700&family=Courier+Prime:wght@400;700&family=Permanent+Marker&display=swap">
+<style>
+/* Layout: Youth Worship manual look — black cover band with logo and the pink/yellow/violet/grey stripe,
+   paper pages with grey rounded panels, condensed uppercase headlines, sticker shadows in brand pink. */
+:root{
+  --bg:#FBF9F4; --surface:#FFFDF8; --card:#F1EFEA; --ink:#0B0B0C; --muted:#5E5A55; --line:#E2DED6;
+  --accent:#E8003F; --accent-ink:#FFFFFF; --soft:#FDE3EA; --sun:#FFD004; --sun-ink:#1A1400; --violet:#5A11E7;
+  --tile-bg:#0B0B0C; --tile-ink:#FBF9F4;
+  --head-bg:#FBF9F4; --head-ink:#0B0B0C; --head-muted:#5E5A55;
+  --ok:#12804F; --warn:#A35F00; --bad:#C8102E; --shadow:0 1px 2px rgba(11,11,12,.06),0 8px 24px rgba(11,11,12,.08);
+  --f-display:"Anton",Impact,"Arial Narrow",sans-serif;
+  --f-body:"Poppins",ui-sans-serif,system-ui,-apple-system,"Segoe UI",sans-serif;
+  --f-mono:"Courier Prime","Courier New",ui-monospace,monospace;
+  --f-hand:"Permanent Marker","Comic Sans MS",cursive;
+}
+/* Single paper look on purpose: the manual's off-white pages, in light and dark system themes alike. */
+:root{color-scheme:light}
+
+*{box-sizing:border-box}
+body{background:var(--bg);color:var(--ink);font-family:var(--f-body);font-size:15px;line-height:1.5}
+body::before{content:"";position:fixed;inset:0 0 auto;height:env(safe-area-inset-top,0px);z-index:10;background:var(--surface)}
+.wrap{max-width:1180px;margin:0 auto;padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px))}
+h1,h2,h3{font-family:var(--f-display);text-wrap:balance;margin:0;line-height:1.15}
+button,input,select,textarea{font:inherit;color:inherit}
+:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+
+/* Header */
+header.top{position:sticky;top:env(safe-area-inset-top,0px);z-index:5;background:var(--surface);border-bottom:1px solid var(--line)}
+.brand{display:flex;align-items:center;justify-content:space-between;gap:12px;padding-block:14px 8px;flex-wrap:wrap}
+.mark{display:flex;align-items:baseline;gap:10px}
+.mark h1{font-size:28px;font-weight:800;letter-spacing:-.02em}
+.mark h1 i{font-style:normal;background:var(--sun);color:var(--sun-ink);padding:0 6px;border-radius:4px;margin-left:2px}
+.mark span{color:var(--muted);font-size:13px}
+#status{font-size:13px;color:var(--muted);display:flex;align-items:center;gap:6px}
+.dot{width:8px;height:8px;border-radius:50%;background:var(--muted);display:inline-block}
+.dot.live{background:var(--ok)}
+.tabs{display:flex;gap:4px;overflow-x:auto;scrollbar-width:none;padding-bottom:0}
+.tabs::-webkit-scrollbar{display:none}
+.tabs button{border:0;background:none;padding:10px 14px;border-bottom:3px solid transparent;cursor:pointer;font-weight:600;color:var(--muted);white-space:nowrap}
+.tabs button:hover{color:var(--ink)}
+.tabs button[aria-current="page"]{color:var(--ink);border-bottom-color:var(--accent)}
+
+main{padding-block:24px 64px}
+.banner{background:var(--soft);border:1px solid var(--line);border-radius:10px;padding:10px 14px;margin-bottom:18px;font-size:14px}
+.banner b{font-weight:700}
+
+/* Toolbar */
+.bar{display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap;margin-bottom:18px}
+.bar h2{font-size:26px;font-weight:800;letter-spacing:-.01em}
+.seg{display:inline-flex;background:var(--surface);border:1px solid var(--line);border-radius:999px;padding:3px}
+.seg button{border:0;background:none;border-radius:999px;padding:6px 14px;cursor:pointer;font-weight:600;color:var(--muted);font-size:14px}
+.seg button[aria-pressed="true"]{background:var(--ink);color:var(--bg)}
+.btn{border:1px solid var(--line);background:var(--surface);border-radius:8px;padding:8px 14px;cursor:pointer;font-weight:600;font-size:14px}
+.btn:hover{border-color:var(--muted)}
+.btn.primary{background:var(--accent);color:var(--accent-ink);border-color:var(--accent)}
+.btn.primary:hover{filter:brightness(1.08)}
+.btn.ghost{border-color:transparent;background:none;color:var(--muted);padding:6px 8px}
+.btn.ghost:hover{color:var(--ink);background:var(--soft)}
+.btn.danger{color:var(--bad)}
+.btn.danger[data-armed]{background:var(--bad);color:#fff;border-color:var(--bad)}
+.row{display:flex;gap:8px;flex-wrap:wrap;align-items:center}
+
+/* Cards & tiles */
+.card{background:var(--surface);border:1px solid var(--line);border-radius:12px;padding:18px;min-width:0}
+.stack{display:grid;gap:12px}
+.tile{flex:none;width:58px;border-radius:10px;background:var(--ink);color:var(--bg);text-align:center;padding:6px 0 7px;font-family:var(--f-mono);line-height:1.1}
+.tile span{display:block;font-size:10px;text-transform:uppercase;letter-spacing:.08em;opacity:.75}
+.tile b{display:block;font-size:24px;font-weight:700;margin:2px 0}
+.tile.past{background:var(--line);color:var(--muted)}
+.item{display:flex;gap:14px;align-items:flex-start}
+.item .body{flex:1;min-width:0}
+.eyebrow{font-size:11px;text-transform:uppercase;letter-spacing:.09em;color:var(--muted);font-weight:700}
+.mono{font-family:var(--f-mono);font-size:13px;font-variant-numeric:tabular-nums}
+.muted{color:var(--muted)}
+.chip{display:inline-flex;align-items:center;gap:4px;border-radius:999px;padding:2px 10px;font-size:12px;font-weight:600;background:var(--soft);color:var(--ink);white-space:nowrap}
+.chip.key{font-family:var(--f-mono);background:var(--sun);color:var(--sun-ink)}
+.chip.ok{background:transparent;border:1px solid var(--ok);color:var(--ok)}
+.chip.warn{background:transparent;border:1px solid var(--warn);color:var(--warn)}
+.chip.bad{background:transparent;border:1px solid var(--bad);color:var(--bad)}
+.meta{display:grid;grid-template-columns:repeat(auto-fit,minmax(170px,1fr));gap:10px 18px;margin-top:12px}
+.meta div{min-width:0}
+.meta dt{font-size:11px;text-transform:uppercase;letter-spacing:.09em;color:var(--muted);font-weight:700}
+.meta dd{margin:0;font-weight:600;overflow-wrap:anywhere}
+details{margin-top:14px;border-top:1px dashed var(--line);padding-top:10px}
+summary{cursor:pointer;font-weight:600;color:var(--muted);font-size:14px}
+.order{list-style:none;padding:0;margin:10px 0 0;display:grid;gap:0}
+.order li{display:grid;grid-template-columns:56px 1fr auto;gap:10px;padding:7px 0;border-bottom:1px solid var(--line);align-items:baseline}
+.order li:last-child{border-bottom:0}
+.songs{list-style:none;padding:0;margin:10px 0 0;display:grid;gap:6px}
+.songs li{display:flex;gap:8px;align-items:center;flex-wrap:wrap}
+.songs .n{font-family:var(--f-mono);color:var(--muted);font-size:12px;width:20px}
+
+/* Home */
+.home{display:grid;grid-template-columns:minmax(0,1.5fr) minmax(0,1fr);gap:18px;align-items:start}
+.next{border:2px solid var(--ink);box-shadow:var(--shadow)}
+.next h3{font-size:30px;font-weight:800;letter-spacing:-.015em;margin-top:4px}
+.count{font-family:var(--f-mono);font-size:13px;background:var(--sun);color:var(--sun-ink);border-radius:6px;padding:2px 8px;font-weight:700}
+.sect-h{display:flex;justify-content:space-between;align-items:baseline;margin-bottom:10px;gap:8px}
+.sect-h h3{font-size:18px;font-weight:700}
+.list{display:grid;gap:0}
+.list > div{padding:9px 0;border-bottom:1px solid var(--line);display:flex;gap:10px;align-items:baseline;justify-content:space-between;min-width:0}
+.list > div:last-child{border-bottom:0}
+.list .t{min-width:0;overflow-wrap:anywhere}
+
+/* Agenda */
+.month{font-family:var(--f-display);font-size:18px;font-weight:700;margin:22px 0 10px}
+.month:first-child{margin-top:0}
+
+/* Escalas */
+.roles{display:grid;gap:6px;margin-top:8px}
+.role{display:grid;grid-template-columns:190px 1fr auto;gap:10px;align-items:baseline;padding:6px 0;border-bottom:1px solid var(--line)}
+.role:last-child{border-bottom:0}
+.role b{font-size:13px}
+
+/* Tarefas */
+.kanban{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:14px;align-items:start}
+.col{background:var(--surface);border:1px solid var(--line);border-radius:12px;padding:12px;min-width:0}
+.col h3{font-size:15px;font-weight:700;display:flex;justify-content:space-between;margin-bottom:10px}
+.task{border:1px solid var(--line);border-radius:10px;padding:10px 12px;background:var(--bg);display:grid;gap:6px}
+.task.done .tt{text-decoration:line-through;color:var(--muted)}
+.tt{font-weight:600;overflow-wrap:anywhere}
+.task .foot{display:flex;justify-content:space-between;align-items:center;gap:6px;flex-wrap:wrap}
+
+/* Avisos */
+.notes{display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:14px;align-items:start}
+.note p{white-space:pre-wrap;margin:8px 0 0;overflow-wrap:anywhere}
+.note.pinned{border-color:var(--sun);border-width:2px}
+
+/* Repertório */
+.tablewrap{overflow-x:auto;background:var(--surface);border:1px solid var(--line);border-radius:12px}
+table{border-collapse:collapse;width:100%;min-width:560px}
+th,td{text-align:left;padding:10px 14px;border-bottom:1px solid var(--line);font-size:14px}
+th{font-size:11px;text-transform:uppercase;letter-spacing:.09em;color:var(--muted)}
+tr:last-child td{border-bottom:0}
+td.num{font-family:var(--f-mono);font-variant-numeric:tabular-nums}
+
+.empty{border:1.5px dashed var(--line);border-radius:12px;padding:28px 20px;text-align:center;color:var(--muted);display:grid;gap:10px;justify-items:center}
+.empty strong{color:var(--ink);font-family:var(--f-display);font-size:18px}
+
+/* Dialog */
+dialog{border:0;border-radius:14px;padding:0;width:min(720px,calc(100vw - 24px));max-height:calc(100vh - 32px);background:var(--surface);color:var(--ink);box-shadow:0 20px 60px rgba(0,0,0,.35)}
+dialog::backdrop{background:rgba(10,14,24,.55)}
+dialog form{display:flex;flex-direction:column;max-height:calc(100vh - 32px)}
+.dh{display:flex;justify-content:space-between;align-items:center;padding:16px 20px;border-bottom:1px solid var(--line)}
+.dh h2{font-size:20px;font-weight:800}
+.db{padding:18px 20px;overflow-y:auto;display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:14px}
+.df{display:flex;justify-content:space-between;gap:8px;padding:14px 20px;border-top:1px solid var(--line);flex-wrap:wrap}
+.fld{display:grid;gap:5px;min-width:0}
+.fld.full{grid-column:1/-1}
+.fld label{font-size:12px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.06em}
+.fld input,.fld select,.fld textarea{width:100%;border:1px solid var(--line);border-radius:8px;padding:9px 11px;background:var(--bg)}
+.fld textarea{min-height:84px;resize:vertical}
+.fld.check{display:flex;align-items:center;gap:8px}
+.fld.check input{width:auto}
+.rep{grid-column:1/-1;border:1px solid var(--line);border-radius:10px;padding:12px;display:grid;gap:8px}
+.rep-h{display:flex;justify-content:space-between;align-items:center;gap:8px;flex-wrap:wrap}
+.rep-h b{font-size:12px;text-transform:uppercase;letter-spacing:.06em;color:var(--muted)}
+.rrow{display:grid;gap:6px;align-items:center}
+.rrow.m{grid-template-columns:minmax(0,2fr) minmax(0,1.4fr) 70px 32px}
+.rrow.o{grid-template-columns:142px minmax(0,2fr) minmax(0,1.4fr) 32px}
+.rrow input{width:100%;border:1px solid var(--line);border-radius:7px;padding:7px 9px;background:var(--bg);min-width:0}
+.x{border:0;background:none;cursor:pointer;color:var(--muted);font-size:18px;line-height:1;padding:4px}
+.x:hover{color:var(--bad)}
+
+.steps{display:flex;gap:4px;overflow-x:auto;padding:10px 20px 0;border-bottom:1px solid var(--line);flex:none;scrollbar-width:none}
+.steps::-webkit-scrollbar{display:none}
+.steps button{border:0;background:none;padding:8px 10px 10px;border-bottom:3px solid transparent;cursor:pointer;font-weight:600;color:var(--muted);white-space:nowrap;display:flex;align-items:center;gap:7px;font-size:14px}
+.steps button span{font-family:var(--f-mono);font-size:11px;width:20px;height:20px;border-radius:50%;display:inline-grid;place-items:center;border:1px solid var(--line)}
+.steps button[aria-current="step"]{color:var(--ink);border-bottom-color:var(--accent)}
+.steps button[aria-current="step"] span{background:var(--accent);color:var(--accent-ink);border-color:var(--accent)}
+.db[data-panel]{flex:1;align-content:start;min-height:300px}
+.hint-step{grid-column:1/-1;margin:0;color:var(--muted);font-size:14px}
+#resumo{grid-column:1/-1;border:1px solid var(--line);border-radius:10px;padding:14px;display:grid;gap:8px;background:var(--bg)}
+#resumo h3{font-size:20px;font-weight:800}
+#resumo .warn{color:var(--warn);font-size:14px;font-weight:600}
+.dwrap{display:flex;flex-direction:column;max-height:calc(100vh - 32px)}
+.dwrap .dh h2{font-size:21px}
+.dbody{padding:18px 20px 22px;overflow-y:auto;min-height:280px}
+.agenda-item{cursor:pointer}
+.agenda-item:hover{border-color:var(--muted)}
+.linkish{border:0;background:none;padding:0;font:inherit;font-family:var(--f-display);font-size:20px;font-weight:700;color:var(--ink);cursor:pointer;text-align:left}
+.linkish:hover{color:var(--accent)}
+.editbar{display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap;padding:10px 20px;border-bottom:1px solid var(--line);background:var(--bg);font-size:14px;flex:none}
+.editbar.open{display:grid;gap:12px;max-height:55vh;overflow-y:auto;padding-block:16px}
+.qgrid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px}
+.qgrid .fld.full{grid-column:1/-1}
+.qgrid .fld input,.qgrid .fld select,.qgrid .fld textarea{background:var(--surface)}
+@media (max-width:560px){.qgrid{grid-template-columns:1fr 1fr}}
+.hright{display:flex;align-items:center;gap:12px}
+.bellwrap{position:relative}
+.bellbtn{position:relative;border:1px solid var(--line);background:var(--surface);color:var(--ink);border-radius:999px;width:38px;height:38px;display:grid;place-items:center;cursor:pointer}
+.bellbtn:hover{border-color:var(--muted)}
+#bellcount{position:absolute;top:-5px;right:-5px;background:var(--bad);color:#fff;font:700 11px/18px var(--f-mono);border-radius:999px;min-width:18px;height:18px;padding:0 5px;text-align:center}
+#bellpop{position:absolute;right:0;top:46px;width:min(340px,calc(100vw - 32px));max-height:70vh;overflow-y:auto;background:var(--surface);border:1px solid var(--line);border-radius:12px;box-shadow:0 12px 40px rgba(0,0,0,.18);padding:14px;z-index:30;display:grid;gap:10px}
+.fld select#me-sel{background:var(--bg)}
+.notif{display:grid;gap:3px;text-align:left;border:1px solid var(--line);border-radius:9px;padding:9px 11px;background:var(--bg);cursor:pointer;width:100%}
+.notif.unread{border-color:var(--accent);border-width:2px}
+.notif:hover{border-color:var(--muted)}
+.mlist{display:grid;gap:2px;border:1px solid var(--line);border-radius:8px;padding:6px;background:var(--surface);box-shadow:var(--shadow)}
+.mlist button{text-align:left;border:0;background:none;padding:7px 9px;border-radius:6px;cursor:pointer;font-weight:600}
+.mlist button:hover,.mlist button:focus-visible{background:var(--soft)}
+.mention{color:var(--accent);font-weight:700}
+/* ---- Youth Worship brand layer ---- */
+h3{font-family:var(--f-body)}
+body::before{background:var(--head-bg)}
+header.top{background:var(--head-bg);color:var(--head-ink);border-bottom:0}
+.brand{padding-block:14px 8px}
+.mark{align-items:center;gap:14px}
+.mark .logo{height:42px;width:auto;display:block}
+.mark .tag{font-family:var(--f-mono);font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:var(--head-muted);line-height:1.3;max-width:150px}
+.hand{font-family:var(--f-hand);color:var(--violet);font-size:15px;line-height:1.25;margin:0;transform:rotate(-2deg);max-width:300px}
+@media (max-width:900px){.hand{display:none}}
+#status{color:var(--head-muted);font-family:var(--f-mono);font-size:12px}
+.tabs button{color:var(--head-muted);font-family:var(--f-display);font-weight:400;font-size:18px;letter-spacing:.05em;text-transform:uppercase;padding:10px 14px 9px}
+.tabs button:hover{color:var(--head-ink)}
+.tabs button[aria-current="page"]{color:var(--head-ink);border-bottom-color:var(--accent)}
+.stripes{display:grid;grid-template-columns:4fr 3fr 2fr 1fr;height:6px}
+.stripes i:nth-child(1){background:#FE003E}
+.stripes i:nth-child(2){background:#FFD004}
+.stripes i:nth-child(3){background:#5A11E7}
+.stripes i:nth-child(4){background:#878787}
+.bellbtn{background:var(--surface);border:2px solid var(--ink);color:var(--ink)}
+.bellbtn:hover{border-color:var(--accent);color:var(--accent)}
+#bellcount{background:#FE003E}
+#bellpop{color:var(--ink);border:2px solid var(--ink);box-shadow:6px 6px 0 var(--accent)}
+
+.bar h2{font-family:var(--f-display);font-weight:400;font-size:clamp(36px,6vw,56px);text-transform:uppercase;letter-spacing:.01em;line-height:.95;position:relative;padding-bottom:14px}
+.bar h2::after{content:"";position:absolute;left:0;bottom:0;width:min(100%,240px);height:7px;border-radius:7px;background:var(--ink);transform:rotate(-1.2deg)}
+.bar h2 em{font-style:normal;color:var(--accent)}
+.card,.col,.tablewrap{background:var(--card);border:0;border-radius:18px}
+.task{background:var(--surface);border-color:transparent;border-radius:12px}
+.col h3{font-family:var(--f-display);font-weight:400;text-transform:uppercase;font-size:22px;letter-spacing:.02em}
+.next{background:var(--surface);border:3px solid var(--ink);box-shadow:8px 8px 0 var(--accent)}
+.next h3{font-family:var(--f-display);font-weight:400;text-transform:uppercase;font-size:44px;line-height:1;letter-spacing:.01em}
+.sect-h h3{font-family:var(--f-display);font-weight:400;text-transform:uppercase;font-size:24px;letter-spacing:.02em}
+.month{font-family:var(--f-display);font-weight:400;text-transform:uppercase;font-size:30px;color:var(--accent);letter-spacing:.02em}
+.tile{background:var(--tile-bg);color:var(--tile-ink);border-radius:12px;width:62px;padding:7px 0 8px}
+.tile b{font-family:var(--f-display);font-weight:400;font-size:32px;line-height:1;margin:3px 0}
+.tile span{font-weight:700;opacity:.85}
+.tile.past{background:var(--line);color:var(--muted)}
+.eyebrow,.meta dt,.fld label,th{font-family:var(--f-mono);letter-spacing:.05em}
+.btn{border-radius:999px;border:2px solid var(--ink);background:transparent;font-weight:600}
+.btn:hover{background:var(--ink);color:var(--bg);border-color:var(--ink)}
+.btn.primary{background:var(--accent);border-color:var(--accent);color:var(--accent-ink)}
+.btn.primary:hover{filter:none;background:var(--ink);border-color:var(--ink);color:var(--bg)}
+.btn.ghost{border-color:transparent;color:var(--ink);text-decoration:underline;text-decoration-color:var(--accent);text-decoration-thickness:2px;text-underline-offset:4px}
+.btn.ghost:hover{background:var(--soft);color:var(--ink);border-color:transparent}
+.btn.danger{border-color:var(--bad);color:var(--bad)}
+.seg{background:var(--card);border:0}
+.seg button{font-family:var(--f-display);font-weight:400;text-transform:uppercase;letter-spacing:.04em;font-size:15px}
+.seg button[aria-pressed="true"]{background:var(--ink);color:var(--bg)}
+.chip{font-family:var(--f-mono);font-weight:700;text-transform:uppercase;font-size:11px;letter-spacing:.04em;padding:3px 10px}
+.chip.key{background:var(--sun);color:var(--sun-ink)}
+.linkish{font-family:var(--f-display);font-weight:400;text-transform:uppercase;font-size:28px;letter-spacing:.01em;line-height:1.05}
+.linkish:hover{color:var(--accent)}
+.agenda-item{transition:box-shadow .15s, transform .15s}
+.agenda-item:hover{box-shadow:6px 6px 0 var(--accent);transform:translate(-2px,-2px)}
+@media (prefers-reduced-motion:reduce){.agenda-item{transition:none}.agenda-item:hover{transform:none}}
+.empty{border:2px dashed var(--line);background:transparent;border-radius:18px}
+.empty strong{font-family:var(--f-display);font-weight:400;text-transform:uppercase;font-size:26px;letter-spacing:.02em}
+.banner{background:var(--sun);color:var(--sun-ink);border:0;border-radius:14px}
+dialog{border-radius:20px;border:3px solid var(--ink);box-shadow:8px 8px 0 var(--accent);background:var(--surface)}
+.dh{background:var(--head-bg);color:var(--head-ink);border-bottom:0}
+.dh h2{font-family:var(--f-display);font-weight:400;text-transform:uppercase;font-size:30px;letter-spacing:.01em;line-height:1}
+.dh{border-bottom:1px solid var(--line)}
+.dh .eyebrow{color:var(--accent)}
+.dh .x{color:var(--head-ink)}
+.dh .tile{background:#E8003F;color:#fff}
+.steps{background:var(--surface)}
+.steps button{font-family:var(--f-display);font-weight:400;text-transform:uppercase;letter-spacing:.04em;font-size:17px}
+.steps button[aria-current="step"]{border-bottom-color:var(--accent)}
+.steps button[aria-current="step"] span{background:var(--accent);border-color:var(--accent)}
+.editbar{background:var(--card)}
+.order li span.mono{color:var(--accent);font-weight:700}
+.mention{color:var(--violet)}
+.songs .n{color:var(--accent);font-weight:700}
+#toast{border-radius:999px}
+#login{position:fixed;inset:0;z-index:40;background:var(--bg);display:grid;place-items:center;padding:max(16px,env(safe-area-inset-left,0px))}
+.loginbox{width:min(380px,100%);display:grid;gap:14px;background:var(--surface);border:3px solid var(--ink);border-radius:20px;padding:26px;box-shadow:8px 8px 0 var(--accent)}
+.loginbox img{height:52px;width:auto}
+.loginbox h2{font-family:var(--f-display);font-weight:400;text-transform:uppercase;font-size:32px;letter-spacing:.01em}
+.pfoot{display:flex;justify-content:space-between;align-items:center;gap:14px;flex-wrap:wrap;padding-block:18px 40px;border-top:2px solid var(--ink);margin-top:10px}
+.pfoot > div:first-child{display:grid;gap:2px;font-size:14px}
+.pfoot b{font-family:var(--f-display);font-weight:400;text-transform:uppercase;font-size:18px;letter-spacing:.03em}
+.tadd{display:flex;gap:8px;flex-wrap:wrap;background:var(--card);border-radius:18px;padding:10px;margin-bottom:22px}
+.tadd input{flex:1 1 240px;min-width:0;border:2px solid var(--ink);border-radius:999px;padding:10px 18px;background:var(--surface)}
+.tadd input:focus{outline:none;border-color:var(--accent)}
+.tgroup{margin-bottom:22px;display:grid;gap:8px}
+.tgroup h3{font-family:var(--f-display);font-weight:400;text-transform:uppercase;font-size:22px;letter-spacing:.02em}
+.tgroup.late h3{color:var(--accent)}
+.todo{display:flex;gap:12px;align-items:flex-start;background:var(--card);border-radius:14px;padding:12px 14px;cursor:pointer;border:2px solid transparent}
+.todo:hover{border-color:var(--ink)}
+.todo .tbody{flex:1;min-width:0;display:grid;gap:6px}
+.todo .tt{border:0;background:none;padding:0;text-align:left;font-weight:600;font-size:15px;cursor:pointer;color:var(--ink);overflow-wrap:anywhere}
+.todo.done .tt{text-decoration:line-through;color:var(--muted)}
+.check{flex:none;width:26px;height:26px;border-radius:50%;border:2px solid var(--ink);background:var(--surface);display:grid;place-items:center;cursor:pointer;color:transparent;padding:0;margin-top:1px}
+.check:hover{border-color:var(--accent);color:var(--accent)}
+.check.on{background:var(--accent);border-color:var(--accent);color:#fff}
+.check.big{width:34px;height:34px}
+.chip.vio{background:var(--violet);color:#fff}
+:root{--dl-ok:#1E5EFF;--dl-soon:#FFD004;--dl-late:#E10031}
+.chip.dl-ok{background:var(--dl-ok);color:#fff}
+.chip.dl-soon{background:var(--dl-soon);color:#1A1400}
+.chip.dl-late{background:var(--dl-late);color:#fff}
+/* Whole task card painted in its deadline colour; inner chips go translucent so they read on it. */
+.todo.dl-ok{background:var(--dl-ok);color:#FFFFFF}
+.todo.dl-soon{background:var(--dl-soon);color:#1A1400}
+.todo.dl-late{background:var(--dl-late);color:#FFFFFF}
+.todo.dl-ok .tt,.todo.dl-soon .tt,.todo.dl-late .tt{color:inherit;font-size:16px}
+.todo.dl-ok .chip,.todo.dl-late .chip{background:rgba(255,255,255,.2);color:#FFFFFF}
+.todo.dl-soon .chip{background:rgba(0,0,0,.09);color:#1A1400}
+.todo.dl-ok .chip[class*="dl-"],.todo.dl-soon .chip[class*="dl-"],.todo.dl-late .chip[class*="dl-"]{background:#0B0B0C;color:#FFFFFF;font-size:12px}
+.todo.dl-ok .check,.todo.dl-soon .check,.todo.dl-late .check{background:transparent;border-color:currentColor;color:transparent}
+.todo.dl-ok .check:hover,.todo.dl-soon .check:hover,.todo.dl-late .check:hover{background:#FFFFFF;color:#0B0B0C;border-color:#FFFFFF}
+.todo.dl-ok:hover,.todo.dl-soon:hover,.todo.dl-late:hover{border-color:#0B0B0C}
+.dl-legend{margin:-10px 0 20px;gap:6px}
+.ttitle{font-family:var(--f-display);font-size:28px;text-transform:uppercase;letter-spacing:.01em;border:0;border-bottom:2px dashed var(--line);background:transparent;color:var(--head-ink);flex:1;width:100%;min-width:0;padding:2px 0}
+.ttitle:focus{outline:none;border-bottom-color:var(--accent)}
+.tgrid{display:grid;grid-template-columns:minmax(0,1.6fr) minmax(0,1fr);gap:22px}
+@media (max-width:640px){.tgrid{grid-template-columns:1fr}}
+.tside{display:grid;gap:12px;align-content:start;background:var(--card);border-radius:14px;padding:14px}
+.tprog{height:7px;border-radius:7px;background:var(--line);overflow:hidden;margin-bottom:6px}
+.tprog i{display:block;height:100%;width:0;background:var(--accent);transition:width .2s}
+.titem{display:flex;gap:8px;align-items:center;padding:6px 0;border-bottom:1px solid var(--line)}
+.titem input[type=checkbox]{width:20px;height:20px;accent-color:var(--accent);flex:none;margin:0}
+.titem input[type=text]{flex:1;min-width:0;border:0;background:transparent;padding:5px 4px;border-radius:6px}
+.titem input[type=text]:focus{outline:none;background:var(--surface)}
+.titem.ok input[type=text]{text-decoration:line-through;color:var(--muted)}
+.titem.add{border-bottom:0}
+.titem .plus{width:20px;text-align:center;font-weight:700;color:var(--accent)}
+.dp{display:grid;gap:6px;min-width:0}
+.dp-btn{display:flex;align-items:center;gap:8px;width:100%;border:1px solid var(--line);border-radius:8px;padding:9px 11px;background:var(--bg);cursor:pointer;text-align:left;color:var(--ink)}
+.dp-btn:hover,.dp-btn[aria-expanded="true"]{border-color:var(--ink)}
+.dp-btn svg{color:var(--accent);flex:none}
+.dp-pop{border:2px solid var(--ink);border-radius:12px;background:var(--surface);padding:10px;width:100%;max-width:320px;box-shadow:4px 4px 0 var(--accent)}
+.dp-head{display:flex;justify-content:space-between;align-items:center;margin-bottom:6px}
+.dp-head b{font-family:var(--f-display);font-weight:400;text-transform:uppercase;font-size:18px;letter-spacing:.03em}
+.dp-head button{border:0;background:none;font-size:24px;line-height:1;cursor:pointer;width:36px;height:36px;border-radius:8px;color:var(--ink)}
+.dp-head button:hover{background:var(--soft)}
+.dp-grid{display:grid;grid-template-columns:repeat(7,1fr);gap:2px;text-align:center}
+.dp-grid i{font-style:normal;font-family:var(--f-mono);font-size:11px;font-weight:700;color:var(--muted);padding:4px 0}
+.dp-grid button{border:0;background:none;border-radius:8px;height:36px;cursor:pointer;font-variant-numeric:tabular-nums;font-weight:500;color:var(--ink)}
+.dp-grid button:hover{background:var(--soft)}
+.dp-grid button.today{box-shadow:inset 0 0 0 1.5px var(--ink)}
+.dp-grid button.sel{background:var(--accent);color:#fff;font-weight:700}
+.dp-foot{display:flex;gap:8px;margin-top:8px}
+.dp-foot button{border:1.5px solid var(--ink);background:none;border-radius:999px;padding:4px 12px;cursor:pointer;font-size:13px;font-weight:600;color:var(--ink)}
+.dp-foot button:hover{background:var(--ink);color:var(--bg)}
+.tp{display:flex;align-items:center;gap:5px}
+.tp b{font-family:var(--f-mono)}
+.tp select{border:1px solid var(--line);border-radius:8px;padding:9px 6px;background:var(--bg);font-variant-numeric:tabular-nums;width:auto;min-width:62px}
+.rrow .tp select{padding:6px 4px;min-width:58px}
+.verse{background:#E8003F;color:#FFFFFF;border-radius:20px;padding:22px 26px 24px;margin-bottom:22px;position:relative;overflow:hidden;display:grid;gap:12px}
+.verse-top{display:flex;justify-content:space-between;align-items:flex-start;gap:12px}
+.verse .eyebrow{color:#FFFFFF;opacity:.9}
+.verse-star{font-family:var(--f-display);font-size:120px;line-height:.6;color:#0B0B0C;margin:-4px -6px -40px 0}
+.verse blockquote{margin:0;font-family:var(--f-body);font-weight:600;font-size:clamp(19px,2.4vw,26px);line-height:1.35;max-width:56ch;text-wrap:pretty}
+.verse cite{justify-self:start;font-style:normal;font-family:var(--f-display);text-transform:uppercase;letter-spacing:.04em;font-size:18px;background:#0B0B0C;color:#FFFFFF;padding:5px 14px 4px;border-radius:4px;transform:rotate(-1.5deg)}
+#toast{position:fixed;left:50%;bottom:calc(20px + env(safe-area-inset-bottom,0px));transform:translateX(-50%);background:var(--ink);color:var(--bg);padding:10px 16px;border-radius:8px;font-weight:600;font-size:14px;z-index:20;max-width:calc(100vw - 32px)}
+
+@media (max-width:860px){
+  .home{grid-template-columns:1fr}
+  .kanban{grid-template-columns:1fr}
+}
+@media (max-width:560px){
+  .db{grid-template-columns:1fr}
+  .rrow.m{grid-template-columns:1fr 1fr 60px 28px}
+  .rrow.m input:nth-child(2){grid-column:auto}
+  .rrow.o{grid-template-columns:136px 1fr 28px}
+  .rrow.o input:nth-child(3){grid-column:2/3}
+  .role{grid-template-columns:1fr auto}
+  .role span.p{grid-column:1/-1}
+  .next h3{font-size:24px}
+  .order li{grid-template-columns:48px 1fr}
+  .order li .muted{grid-column:2}
+}
+@media (prefers-reduced-motion:no-preference){
+  .card,.task{transition:border-color .15s}
+}
+</style>
+
+<header class="top">
+  <div class="wrap">
+    <div class="brand">
+      <div class="mark"><h1 style="margin:0"><img class="logo" src="youth-logo.png" alt="Youth" width="98" height="42"></h1><span class="tag">Painel da equipe</span><p class="hand">Servindo com excelência, amando a Deus e a nossa geração.</p></div>
+      <div class="hright">
+        <div id="status"><span class="dot"></span> Conectando…</div>
+        <div class="bellwrap">
+          <button type="button" id="bell" class="bellbtn" data-act="bell" aria-label="Marcações" aria-haspopup="true">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 8a6 6 0 0 1 12 0c0 7 3 9 3 9H3s3-2 3-9"/><path d="M10.3 21a1.94 1.94 0 0 0 3.4 0"/></svg>
+            <span id="bellcount" hidden>0</span>
+          </button>
+          <div id="bellpop" hidden></div>
+        </div>
+      </div>
+    </div>
+    <nav class="tabs" aria-label="Pastas">
+      <button data-act="tab" data-tab="inicio">Início</button>
+      <button data-act="tab" data-tab="agenda">Agenda</button>
+      <button data-act="tab" data-tab="tarefas">Tarefas</button>
+      <button data-act="tab" data-tab="avisos">Avisos</button>
+    </nav>
+  </div>
+  <div class="stripes" aria-hidden="true"><i></i><i></i><i></i><i></i></div>
+</header>
+
+<main class="wrap">
+  <div id="banner"></div>
+  <div id="view"></div>
+</main>
+<footer class="wrap pfoot">
+  <div><b>Backup dos dados</b><span class="muted">Salve uma cópia de tudo o que está no painel no seu computador.</span></div>
+  <div class="row"><button type="button" class="btn" data-act="backup-json">Baixar backup completo (JSON)</button><button type="button" class="btn ghost" data-act="backup-csv">Planilha da agenda (CSV)</button></div>
+</footer>
+
+<div id="login" hidden>
+  <form id="loginform" class="loginbox" novalidate>
+    <img src="youth-logo.png" alt="Youth" width="140" height="60">
+    <h2>Entrar no painel</h2>
+    <div class="fld"><label for="lg-email">E-mail</label><input id="lg-email" name="email" type="email" autocomplete="username" required></div>
+    <div class="fld"><label for="lg-pass">Senha</label><input id="lg-pass" name="senha" type="password" autocomplete="current-password" required></div>
+    <button type="submit" class="btn primary">Entrar</button>
+    <p class="muted" id="lg-msg" role="alert" style="margin:0;min-height:1.4em"></p>
+  </form>
+</div>
+<dialog id="dlg"></dialog>
+<div id="toast" hidden></div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+<script>
+const COLS = ['cultos','eventos','escalas','tarefas','avisos'];
+const state = {cultos:[],eventos:[],escalas:[],tarefas:[],avisos:[]};
+const loaded = {};
+let db = null, mode = 'loading', canWrite = true;
+const TABS = ['inicio','agenda','tarefas','avisos'];
+let tab = TABS.includes(location.hash.slice(1)) ? location.hash.slice(1) : (()=>{try{return localStorage.getItem('youth-tab')||'inicio'}catch(e){return 'inicio'}})();
+if(!TABS.includes(tab)) tab='inicio';
+const seg = {agenda:'proximos', tarefas:'abertas'};
+
+const areaRank = a => { const i = AREAS.indexOf(a); return i < 0 ? 98 : i; };
+const AREAS = ['Louvor','Recepção','Mídia / Projeção','Som','Fotografia','Intercessão','Ceia','Limpeza / Lanche','Outros'];
+const TIPOS = ['Evento Awake','Evento Storm','Youth Hangout','Treinamento','Culto especial','Retiro','Acampamento','Reunião de equipe','Evangelismo','Social / Comunhão','Ensaio','Outro'];
+const STATUS = [['afazer','A fazer'],['fazendo','Fazendo'],['feito','Feito']];
+const PRIOS = ['Normal','Alta','Baixa'];
+// [início, momento, quem conduz: dir = dirigente, lv = ministro de louvor, pre = preletor]
+const ORDEM_PADRAO = [
+  ['19:30','Oração inicial (10 min)','dir'],
+  ['19:40','Abertura + Louvor (30 min)','lv'],
+  ['20:10','Ministração (5 min)','dir'],
+  ['20:15','Avisos + Visitantes (5 min)','dir'],
+  ['20:20','Louvor oferta (5 min)','lv'],
+  ['20:25','Palavra (40 min)','pre'],
+  ['21:05','Música final (5 min)','lv']
+];
+
+const $ = s => document.querySelector(s);
+const esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const uid = () => Date.now().toString(36) + Math.random().toString(36).slice(2,7);
+const pad = n => String(n).padStart(2,'0');
+const todayStr = () => { const d = new Date(); return d.getFullYear()+'-'+pad(d.getMonth()+1)+'-'+pad(d.getDate()); };
+const parseD = s => { const [y,m,d] = (s||'').split('-').map(Number); return new Date(y||1970,(m||1)-1,d||1); };
+const WD = ['dom','seg','ter','qua','qui','sex','sáb'];
+const MO = ['jan','fev','mar','abr','mai','jun','jul','ago','set','out','nov','dez'];
+const WDF = ['Domingo','Segunda-feira','Terça-feira','Quarta-feira','Quinta-feira','Sexta-feira','Sábado'];
+const MOF = ['Janeiro','Fevereiro','Março','Abril','Maio','Junho','Julho','Agosto','Setembro','Outubro','Novembro','Dezembro'];
+const fmtD = s => { if(!s) return 'Sem data'; const d = parseD(s); return `${WD[d.getDay()]}, ${pad(d.getDate())} ${MO[d.getMonth()]}`; };
+const daysUntil = s => Math.round((parseD(s) - parseD(todayStr())) / 864e5);
+const rel = s => { if(!s) return ''; const n = daysUntil(s); if(n===0) return 'hoje'; if(n===1) return 'amanhã'; if(n===-1) return 'ontem'; return n>1 ? `em ${n} dias` : `há ${-n} dias`; };
+const tile = (s, past) => { if(!s) return `<div class="tile${past?' past':''}"><span>—</span><b>?</b><span></span></div>`; const d = parseD(s); return `<div class="tile${past?' past':''}" aria-label="${esc(fmtD(s))}"><span>${MO[d.getMonth()]}</span><b>${d.getDate()}</b><span>${WD[d.getDay()]}</span></div>`; };
+const byDate = (arr, dir=1) => [...arr].sort((a,b) => dir * (((a.data||'9999')+(a.hora||'')).localeCompare((b.data||'9999')+(b.hora||''))));
+const W = html => canWrite ? html : '';
+
+function toast(msg){ const t = $('#toast'); t.textContent = msg; t.hidden = false; clearTimeout(toast.t); toast.t = setTimeout(()=> t.hidden = true, 2600); }
+
+/* ---------- Data ----------
+   Two backends: the claude.ai artifact store (when opened as an Artifact) and Supabase (the
+   standalone webapp, which loads config.js with window.YOUTH_CONFIG and supabase-js before this script). */
+const CFG = window.YOUTH_CONFIG || null;
+let sb = null, sbUser = null;
+async function init(){
+  render();
+  if(CFG && CFG.supabaseUrl) return initSupabase();
+  const c = window.claude;
+  if(!c || typeof c.use !== 'function'){ mode = 'local'; render(); return; }
+  try { db = await c.use('db'); } catch(e){ db = null; }
+  if(!db){ mode = 'local'; render(); return; }
+  try {
+    const user = await c.use('user');
+    const w = user ? await user.can('data.write') : null;
+    if(w === false) canWrite = false;
+  } catch(e){}
+  mode = 'live';
+  COLS.forEach(name => {
+    db.collection(name).onSnapshot(snap => {
+      state[name] = snap.docs.map(d => ({id:d.id, ...d.data()}));
+      loaded[name] = true;
+      render();
+    }, () => toast('A sincronização parou. Recarregue a página.'));
+  });
+  render();
+}
+
+async function initSupabase(){
+  if(!window.supabase || !CFG.supabaseAnonKey){ mode = 'local'; render(); toast('Configuração do banco incompleta. Confira o arquivo config.js.'); return; }
+  sb = window.supabase.createClient(CFG.supabaseUrl, CFG.supabaseAnonKey, {auth: {persistSession: true, autoRefreshToken: true}});
+  const {data} = await sb.auth.getSession();
+  if(data && data.session) return startSupabase(data.session.user);
+  $('#login').hidden = false; setTimeout(() => { const f = $('#lg-email'); if(f) f.focus(); }, 0);
+}
+async function startSupabase(user){
+  sbUser = user; $('#login').hidden = true;
+  mode = 'live'; canWrite = true; render();
+  const {data, error} = await sb.from('registros').select('colecao,id,dados').limit(10000);
+  if(error){ toast('Sem acesso aos dados: ' + error.message); canWrite = false; COLS.forEach(c => loaded[c] = true); render(); return; }
+  COLS.forEach(c => { state[c] = []; loaded[c] = true; });
+  (data || []).forEach(r => { if(state[r.colecao]) state[r.colecao].push({...r.dados, id: r.id}); });
+  render();
+  sb.channel('registros-youth').on('postgres_changes', {event: '*', schema: 'public', table: 'registros'}, p => {
+    const r = p.eventType === 'DELETE' ? p.old : p.new; if(!r || !state[r.colecao]) return;
+    if(p.eventType === 'DELETE') state[r.colecao] = state[r.colecao].filter(x => x.id !== r.id);
+    else { const rec = {...r.dados, id: r.id}, arr = state[r.colecao], i = arr.findIndex(x => x.id === rec.id); if(i >= 0) arr[i] = rec; else arr.push(rec); }
+    render();
+  }).subscribe();
+}
+document.addEventListener('submit', async ev => {
+  if(ev.target.id !== 'loginform') return;
+  ev.preventDefault();
+  const f = ev.target, msg = $('#lg-msg'), btn = f.querySelector('[type=submit]');
+  btn.disabled = true; btn.textContent = 'Entrando…'; msg.textContent = '';
+  const {data, error} = await sb.auth.signInWithPassword({email: f.elements.email.value.trim(), password: f.elements.senha.value});
+  btn.disabled = false; btn.textContent = 'Entrar';
+  if(error){ msg.textContent = /invalid/i.test(error.message) ? 'E-mail ou senha incorretos.' : 'Não foi possível entrar: ' + error.message; return; }
+  f.elements.senha.value = '';
+  startSupabase(data.user);
+});
+
+async function save(col, rec){
+  const id = rec.id || uid();
+  const body = {...rec}; delete body.id;
+  body.atualizadoEm = new Date().toISOString();
+  if(mode === 'live' && sb){
+    const {error} = await sb.from('registros').upsert({colecao: col, id, dados: body, atualizado_em: body.atualizadoEm});
+    if(error){ toast('Não foi possível salvar: ' + error.message); return false; }
+    const arr = state[col], i = arr.findIndex(x => x.id === id);
+    if(i >= 0) arr[i] = {...body, id}; else arr.push({...body, id});
+    render();
+  } else if(mode === 'live'){
+    try { await db.collection(col).doc(id).set(body); }
+    catch(e){
+      if(e && e.code === 'invalid_argument'){ canWrite = false; render(); toast('Você não tem permissão para editar este painel.'); }
+      else if(e && e.code === 'quota_exceeded'){ toast('O painel atingiu o limite de registros. Exclua itens antigos.'); }
+      else toast('Não foi possível salvar. Tente de novo.');
+      return false;
+    }
+  } else {
+    const arr = state[col]; const i = arr.findIndex(x => x.id === id);
+    if(i >= 0) arr[i] = {id, ...body}; else arr.push({id, ...body});
+    render();
+  }
+  return true;
+}
+async function removeRec(col, id){
+  if(mode === 'live' && sb){
+    const {error} = await sb.from('registros').delete().match({colecao: col, id});
+    if(error){ toast('Não foi possível excluir: ' + error.message); return false; }
+    state[col] = state[col].filter(x => x.id !== id); render();
+  } else if(mode === 'live'){
+    try { await db.collection(col).doc(id).delete(); }
+    catch(e){ toast('Não foi possível excluir. Tente de novo.'); return false; }
+  } else { state[col] = state[col].filter(x => x.id !== id); render(); }
+  return true;
+}
+
+/* ---------- Render ---------- */
+function render(){
+  const st = $('#status');
+  if(mode === 'loading') st.innerHTML = '<span class="dot"></span> Conectando…';
+  else if(mode === 'local') st.innerHTML = '<span class="dot"></span> Modo de teste';
+  else if(sb) st.innerHTML = `<span class="dot live"></span> ${esc(sbUser && sbUser.email || 'Conectado')} <button type="button" class="btn ghost" data-act="logout" style="padding:2px 6px;font-size:12px">Sair</button>`;
+  else st.innerHTML = `<span class="dot live"></span> ${canWrite ? 'Sincronizado com a equipe' : 'Somente leitura'}`;
+
+  const bn = $('#banner');
+  if(mode === 'local' && CFG) bn.innerHTML = '<div class="banner"><b>Banco não configurado.</b> Preencha o arquivo config.js com o endereço e a chave do Supabase.</div>';
+  else if(mode === 'local') bn.innerHTML = '<div class="banner"><b>Modo de teste.</b> O que você cadastrar aqui fica só nesta tela e some ao recarregar. Abra pelo link do claude.ai, conectado à sua conta, para salvar para toda a equipe.</div>';
+  else if(mode === 'live' && !canWrite) bn.innerHTML = '<div class="banner"><b>Somente leitura.</b> Você pode ver tudo, mas não editar. Peça ao pastor acesso de edição ao painel.</div>';
+  else bn.innerHTML = '';
+
+  document.querySelectorAll('.tabs button').forEach(b => b.setAttribute('aria-current', b.dataset.tab === tab ? 'page' : 'false'));
+  $('#view').innerHTML = VIEWS[tab]();
+  if(dlgMode === 'detail' && $('#dlg').open && !detailCtx.editOpen && !detailCtx.obsDirty) renderDetail();
+  renderBell();
+}
+
+const segBtns = (key, opts) => `<div class="seg" role="group">${opts.map(([v,l]) => `<button data-act="seg" data-key="${key}" data-val="${v}" aria-pressed="${seg[key]===v}">${l}</button>`).join('')}</div>`;
+const empty = (title, text, col, label) => `<div class="empty"><strong>${title}</strong><span>${text}</span>${col ? W(`<button class="btn primary" data-act="new" data-col="${col}">${label}</button>`) : ''}</div>`;
+const isLoading = cols => mode === 'loading' || (mode === 'live' && cols.some(c => !loaded[c]));
+const loadingBox = () => '<div class="empty"><span>Carregando dados da equipe…</span></div>';
+
+function cultoCard(c, opts={}){
+  const past = c.data && c.data < todayStr();
+  const ms = c.musicas || [], od = c.ordem || [];
+  const metas = [['Preletor', c.preletor],['Dirigente', c.dirigente],['Ministro de louvor', c.louvor],['Texto bíblico', c.textos]].filter(m => m[1]);
+  return `<article class="card ${opts.big ? 'next' : ''}">
+    <div class="item">
+      ${tile(c.data, past)}
+      <div class="body">
+        <div class="eyebrow">${esc(fmtD(c.data))}${c.hora ? ' · ' + esc(c.hora) : ''} · ${rel(c.data)}${c.serie ? ' · Série: ' + esc(c.serie) : ''}</div>
+        <h3 style="${opts.big ? '' : 'font-size:21px;font-weight:700;margin-top:2px'}">${esc(c.tema || 'Evento sem tema definido')}</h3>
+        ${metas.length ? `<dl class="meta">${metas.map(([k,v]) => `<div><dt>${k}</dt><dd>${esc(v)}</dd></div>`).join('')}</dl>` : ''}
+        ${ms.length ? `<details ${opts.open ? 'open' : ''}><summary>Músicas (${ms.length})</summary><ul class="songs">${ms.map((m,i) => `<li><span class="n">${i+1}</span><b>${esc(m.titulo)}</b>${m.artista ? `<span class="muted">${esc(m.artista)}</span>` : ''}${m.tom ? `<span class="chip key">Tom ${esc(m.tom)}</span>` : ''}</li>`).join('')}</ul></details>` : ''}
+        ${od.length ? `<details ${opts.open ? 'open' : ''}><summary>Ordem do evento (${od.length} momentos)</summary><ol class="order">${od.map(o => `<li><span class="mono muted">${esc(o.hora || '—')}</span><span>${esc(o.item)}</span><span class="muted">${esc(o.responsavel || '')}</span></li>`).join('')}</ol></details>` : ''}
+        ${c.obs ? `<p class="muted" style="margin:12px 0 0;white-space:pre-wrap">${esc(c.obs)}</p>` : ''}
+        <div class="row" style="margin-top:12px">
+          ${W(`<button class="btn" data-act="edit" data-col="cultos" data-id="${esc(c.id)}">Editar</button>`)}
+          <button class="btn" data-act="pdf" data-id="${esc(c.id)}">Baixar PDF</button>
+          ${opts.big ? (it => `<button class="btn ghost" data-act="open" data-kind="${it.kind}" data-id="${esc(it.id)}">Abrir na agenda</button>`)(itemOfCulto(c)) : ''}
+        </div>
+      </div>
+    </div>
+  </article>`;
+}
+
+function prioChip(p){ return p === 'Alta' ? '<span class="chip bad">Alta</span>' : p === 'Baixa' ? '<span class="chip">Baixa</span>' : ''; }
+/* Deadline signal: blue = on time (4+ days left), yellow = 3 days or less, red = past due. Done or undated tasks get none. */
+function prazoState(t){
+  if(!t.prazo || t.status === 'feito') return '';
+  const n = daysUntil(t.prazo);
+  return n < 0 ? 'late' : n <= 3 ? 'soon' : 'ok';
+}
+function prazoChip(t){
+  if(!t.prazo) return '';
+  const st = prazoState(t), n = daysUntil(t.prazo);
+  const dia = k => k === 1 ? '1 dia' : `${k} dias`;
+  const txt = st === 'late' ? `Atrasada há ${dia(-n)} · ${fmtD(t.prazo)}`
+    : st === 'soon' ? `${n === 0 ? 'Vence hoje' : n === 1 ? 'Vence amanhã' : `Faltam ${dia(n)}`} · ${fmtD(t.prazo)}`
+    : st === 'ok' ? `Faltam ${dia(n)} · ${fmtD(t.prazo)}` : fmtD(t.prazo);
+  return `<span class="chip mono${st ? ' dl-' + st : ''}">${esc(txt)}</span>`;
+}
+
+/* Each agenda item is an event (with an optional linked culto) or a standalone culto. */
+function agendaItems(){
+  return [
+    ...state.eventos.map(e => ({kind:'eventos', id:e.id, rec:e, data:e.data, hora:e.hora, titulo:e.titulo, tipo:e.tipo || 'Evento', local:e.local, resp:e.responsavel, culto:state.cultos.find(c => c.eventoId === e.id)})),
+    ...state.cultos.filter(c => !c.eventoId || !state.eventos.some(e => e.id === c.eventoId))
+      .map(c => ({kind:'cultos', id:c.id, rec:c, data:c.data, hora:c.hora, titulo:c.nome || c.tema || 'Evento do Youth', tipo:c.tipo || 'Evento do Youth', local:'', resp:c.dirigente, culto:c}))
+  ];
+}
+const findItem = (kind, id) => agendaItems().find(i => i.kind === kind && i.id === id);
+const itemOfCulto = c => (c.eventoId && findItem('eventos', c.eventoId)) || findItem('cultos', c.id) || {kind:'cultos', id:c.id, data:c.data};
+const escalasFor = it => state.escalas.filter(e => e.ref ? e.ref === it.kind + ':' + it.id : e.data === it.data).sort((a,b) => areaRank(a.area) - areaRank(b.area) || String(a.area).localeCompare(String(b.area)));
+const teamRow = (e, edit) => `<div class="role"><div><b>${esc(e.area)}</b>${e.responsavel ? `<div class="muted" style="font-size:13px">Responsável: ${esc(e.responsavel)}</div>` : ''}</div><span class="p muted">${esc(e.obs || '')}</span>${edit ? W(`<button class="btn ghost" data-act="edit" data-col="escalas" data-id="${esc(e.id)}">Editar</button>`) : '<span></span>'}</div>`;
+
+function repertorioHtml(){
+  const t = todayStr(), map = {};
+  state.cultos.forEach(c => (c.musicas||[]).forEach(m => {
+    if(!m.titulo) return;
+    const k = m.titulo.trim().toLowerCase();
+    const r = map[k] || (map[k] = {titulo:m.titulo.trim(), artista:'', vezes:0, ultima:'', tons:new Set()});
+    r.vezes++; if(m.artista) r.artista = m.artista; if(m.tom) r.tons.add(m.tom);
+    if((c.data||'') > r.ultima && (c.data||'') <= t) r.ultima = c.data;
+  }));
+  const rows = Object.values(map).sort((a,b) => b.vezes - a.vezes || a.titulo.localeCompare(b.titulo));
+  if(!rows.length) return empty('Repertório vazio', 'As músicas que vocês registrarem nas ordens dos eventos aparecem aqui, com quantas vezes foram cantadas, o tom usado e a última data.');
+  return `<p class="muted" style="margin:-6px 0 14px">${rows.length} músicas registradas nos eventos. Use para evitar repetir demais e lembrar o tom da banda.</p>
+  <div class="tablewrap"><table><thead><tr><th>Música</th><th>Artista</th><th>Tons</th><th>Vezes</th><th>Última vez</th></tr></thead><tbody>
+  ${rows.map(r => `<tr><td><b>${esc(r.titulo)}</b></td><td class="muted">${esc(r.artista)}</td><td>${[...r.tons].map(x => `<span class="chip key">${esc(x)}</span>`).join(' ')}</td><td class="num">${r.vezes}</td><td class="num">${r.ultima ? esc(fmtD(r.ultima)) : 'Ainda não cantada'}</td></tr>`).join('')}
+  </tbody></table></div>`;
+}
+
+/* ---------- Compromisso (detail) ---------- */
+let dlgMode = null, detailCtx = null;
+const DTABS = [['resp','Informações'],['escalas','Equipes'],['ordem','Ordem do evento'],['obs','Observações']];
+function openDetail(kind, id, dtab){
+  detailCtx = {kind, id, tab: dtab || (detailCtx && detailCtx.id === id ? detailCtx.tab : 'resp')};
+  dlgMode = 'detail'; editing = null;
+  renderDetail();
+  const dlg = $('#dlg'); if(dlg.isConnected && !dlg.open) dlg.showModal();
+}
+function renderDetail(){
+  const it = findItem(detailCtx.kind, detailCtx.id), dlg = $('#dlg');
+  if(!it){ if(dlg.open) dlg.close(); return; }
+  const c = it.culto, esq = escalasFor(it), tb = detailCtx.tab;
+  if(tb === 'obs'){ markSeen(mentionKey(it)); renderBell(); }
+  const ref = it.kind + ':' + it.id;
+  let body = '';
+  if(tb === 'ordem'){
+    if(c){
+      const ms = c.musicas || [], od = c.ordem || [];
+      const metas = [['Tema', c.tema],['Preletor', c.preletor],['Dirigente', c.dirigente],['Ministro de louvor', c.louvor],['Texto bíblico', c.textos],['Série', c.serie]].filter(m => m[1]);
+      body = `${metas.length ? `<dl class="meta" style="margin-top:0">${metas.map(([k,v]) => `<div><dt>${k}</dt><dd>${esc(v)}</dd></div>`).join('')}</dl>` : ''}
+        <div class="sect-h" style="margin-top:18px"><h3>Ordem do evento</h3></div>
+        ${od.length ? `<ol class="order" style="margin-top:0">${od.map(o => `<li><span class="mono muted">${esc(o.hora || '—')}</span><span>${esc(o.item)}</span><span class="muted">${esc(o.responsavel || '')}</span></li>`).join('')}</ol>` : '<p class="muted" style="margin:0">Nenhum momento cadastrado ainda.</p>'}
+        <div class="sect-h" style="margin-top:18px"><h3>Músicas</h3></div>
+        ${ms.length ? `<ul class="songs" style="margin-top:0">${ms.map((m,i) => `<li><span class="n">${i+1}</span><b>${esc(m.titulo)}</b>${m.artista ? `<span class="muted">${esc(m.artista)}</span>` : ''}${m.tom ? `<span class="chip key">Tom ${esc(m.tom)}</span>` : ''}</li>`).join('')}</ul>` : '<p class="muted" style="margin:0">Nenhuma música registrada.</p>'}
+        ${c.obs ? `<p class="muted" style="margin:14px 0 0;white-space:pre-wrap">${esc(c.obs)}</p>` : ''}
+        <div class="row" style="margin-top:18px">${W(`<button class="btn primary" data-act="edit" data-col="cultos" data-id="${esc(c.id)}">Editar ordem do evento</button>`)}<button class="btn" data-act="pdf" data-id="${esc(c.id)}">Baixar PDF</button></div>`;
+    } else {
+      body = `<div class="empty"><strong>Sem ordem do evento</strong><span>Monte a ordem deste compromisso: tema, preletor, dirigente, músicas com tom e o roteiro com horários.</span>${W(`<button class="btn primary" data-act="mkculto">+ Montar ordem do evento</button>`)}</div>`;
+    }
+  } else if(tb === 'escalas'){
+    body = `<div class="sect-h"><h3>Equipes deste evento</h3>${W(`<button class="btn primary" data-act="new" data-col="escalas" data-date="${esc(it.data)}" data-ref="${esc(ref)}">+ Nova equipe</button>`)}</div>
+      ${esq.length ? `<div class="roles">${esq.map(e => teamRow(e, true)).join('')}</div>`
+        : '<p class="muted" style="margin:0">Nenhuma equipe ainda. Crie as equipes deste evento, como louvor, recepção, mídia e intercessão, com o nome que quiser e um responsável para cada uma.</p>'}`;
+  } else if(tb === 'obs'){
+    const txt = it.rec.observacoes || '';
+    const marc = it.rec.marcados || [];
+    const chips = marc.length ? `<div class="row"><span class="eyebrow">Marcados</span>${marc.map(n => `<span class="chip">@${esc(n)}</span>`).join('')}</div>` : '';
+    body = canWrite
+      ? `<form id="obsform" class="stack" novalidate>
+          <div class="fld"><label for="obs-text">Observações do evento</label><textarea id="obs-text" name="observacoes" style="min-height:200px" placeholder="Anote lembretes, pedidos e combinados. Digite @ para marcar alguém da equipe.">${esc(txt)}</textarea></div>
+          <div class="mlist" id="mlist" hidden></div>
+          ${chips}
+          <div class="row" style="justify-content:space-between"><span class="muted" style="font-size:13px">${it.rec.obsEm ? 'Última alteração: ' + esc(fmtD(it.rec.obsEm.slice(0,10))) : 'Ainda sem observações.'}</span><button type="submit" class="btn primary">Salvar observações</button></div>
+        </form>`
+      : (txt ? `<p style="margin:0;white-space:pre-wrap;overflow-wrap:anywhere">${withMentions(txt, marc)}</p>` : '<p class="muted" style="margin:0">Nenhuma observação registrada.</p>');
+  } else {
+    const ev = it.kind === 'eventos' ? it.rec : null;
+    const rows = ev
+      ? [['Responsável pelo evento', ev.responsavel],['Tipo', ev.tipo],['Local', ev.local],['Horário', ev.hora]]
+      : [['Tipo', it.tipo],['Horário', it.hora]];
+    if(c) rows.push(['Dirigente', c.dirigente],['Preletor', c.preletor],['Ministro de louvor', c.louvor]);
+    const filled = rows.filter(r => r[1]);
+    body = `${filled.length ? `<dl class="meta" style="margin-top:0">${filled.map(([k,v]) => `<div><dt>${k}</dt><dd>${esc(v)}</dd></div>`).join('')}</dl>` : '<p class="muted" style="margin:0">Nenhum responsável definido ainda.</p>'}
+      ${ev && ev.descricao ? `<p style="margin:14px 0 0;white-space:pre-wrap">${esc(ev.descricao)}</p>` : ''}
+      ${esq.length ? `<div class="sect-h" style="margin-top:18px"><h3>Equipes</h3></div><div class="roles">${esq.map(e => teamRow(e, false)).join('')}</div>` : ''}
+      ${(tl => tl.length ? `<div class="sect-h" style="margin-top:18px"><h3>Tarefas deste evento</h3></div>${tl.map(todoRow).join('')}` : '')(state.tarefas.filter(x => x.eventoRef === ref).sort(taskSort))}
+      <div class="row" style="margin-top:18px">${W(ev ? `<button class="btn primary" data-act="qopen">Editar informações</button>` : '')}${W(c ? `<button class="btn" data-act="edit" data-col="cultos" data-id="${esc(c.id)}">Editar dirigente e preletor</button>` : '')}</div>`;
+  }
+  const count = {ordem: c && (c.ordem||[]).length ? '✓' : '', escalas: esq.length || '', resp: '', obs: it.rec.observacoes ? '✓' : ''};
+  dlg.innerHTML = `<div class="dwrap">
+    <div class="dh"><div class="item" style="align-items:center">${tile(it.data, it.data < todayStr())}<div class="body"><div class="eyebrow">${esc(it.tipo)} · ${esc(fmtD(it.data))}${it.hora ? ' · ' + esc(it.hora) : ''}</div><h2>${esc(it.titulo)}</h2></div></div><button type="button" class="x" data-act="close" aria-label="Fechar">×</button></div>
+    ${editBar(it)}
+    <nav class="steps" aria-label="Seções do compromisso">${DTABS.map(([k,l]) => `<button type="button" data-act="dtab" data-tab="${k}" aria-current="${k === tb ? 'step' : 'false'}">${l}${count[k] ? ` <span>${count[k]}</span>` : ''}</button>`).join('')}</nav>
+    <div class="dbody">${body}</div>
+  </div>`;
+}
+
+/* Inline editor at the top of the event window: the event's own data (or a standalone ordem's name/type/date). */
+const qFields = it => it.kind === 'eventos'
+  ? FORMS.eventos.fields
+  : FORMS.cultos.fields.filter(f => ['nome','tipo','data','hora'].includes(f[0]));
+function editBar(it){
+  if(!canWrite) return '';
+  if(!detailCtx.editOpen) return `<div class="editbar"><span class="muted">${it.kind === 'eventos' ? 'Nome, tipo, data, local e responsável deste evento.' : 'Nome, tipo, data e horário deste evento.'}</span><button type="button" class="btn" data-act="qopen">Editar evento</button></div>`;
+  return `<form id="qedit" class="editbar open" novalidate>
+    <div class="qgrid">${qFields(it).map(fd => fieldHtml(fd, it.rec[fd[0]] ?? '')).join('')}</div>
+    <div class="row" style="justify-content:space-between">
+      <button type="button" class="btn danger" data-act="qdel">Excluir evento</button>
+      <span class="row"><button type="button" class="btn" data-act="qcancel">Cancelar</button><button type="submit" class="btn primary">Salvar alterações</button></span>
+    </div>
+  </form>`;
+}
+
+/* Versículo do dia: one verse about serving per calendar day, same for everyone on the same date. */
+const VERSOS = [
+  ['Marcos 10:45', 'Pois nem mesmo o Filho do homem veio para ser servido, mas para servir e dar a sua vida em resgate por muitos.'],
+  ['Colossenses 3:23', 'Tudo o que fizerem, façam de todo o coração, como para o Senhor, e não para os homens.'],
+  ['1 Pedro 4:10', 'Cada um exerça o dom que recebeu para servir os outros, administrando fielmente a graça de Deus em suas múltiplas formas.'],
+  ['Gálatas 5:13', 'Irmãos, vocês foram chamados para a liberdade. Mas não usem a liberdade para dar ocasião à vontade da carne; ao contrário, sirvam uns aos outros mediante o amor.'],
+  ['Josué 24:15', 'Eu e a minha família serviremos ao Senhor.'],
+  ['Salmos 100:2', 'Sirvam ao Senhor com alegria; entrem na sua presença com cânticos alegres.'],
+  ['Romanos 12:11', 'Nunca lhes falte o zelo; sejam fervorosos no espírito, sirvam ao Senhor.'],
+  ['João 13:14-15', 'Pois bem, se eu, sendo Senhor e Mestre de vocês, lavei os seus pés, vocês também devem lavar os pés uns dos outros. Eu lhes dei o exemplo, para que vocês façam como lhes fiz.'],
+  ['Filipenses 2:3-4', 'Nada façam por ambição egoísta ou por vaidade, mas humildemente considerem os outros superiores a si mesmos. Cada um cuide, não somente dos seus interesses, mas também dos interesses dos outros.'],
+  ['Mateus 20:26', 'Quem quiser tornar-se importante entre vocês deverá ser servo.'],
+  ['Hebreus 6:10', 'Deus não é injusto; ele não se esquecerá do trabalho de vocês e do amor que demonstraram por ele, pois ajudaram os santos e continuam a ajudá-los.'],
+  ['1 Coríntios 15:58', 'Sejam sempre dedicados à obra do Senhor, pois vocês sabem que, no Senhor, o trabalho de vocês não será inútil.'],
+  ['Gálatas 6:9', 'E não nos cansemos de fazer o bem, pois no tempo próprio colheremos, se não desanimarmos.'],
+  ['Efésios 2:10', 'Porque somos criação de Deus realizada em Cristo Jesus para fazermos boas obras, as quais Deus preparou antes para nós as praticarmos.'],
+  ['Romanos 12:1', 'Rogo-lhes pelas misericórdias de Deus que se ofereçam em sacrifício vivo, santo e agradável a Deus; este é o culto racional de vocês.'],
+  ['1 Timóteo 4:12', 'Ninguém o despreze pelo fato de você ser jovem, mas seja um exemplo para os fiéis na palavra, no procedimento, no amor, na fé e na pureza.'],
+  ['Mateus 5:16', 'Assim brilhe a luz de vocês diante dos homens, para que vejam as suas boas obras e glorifiquem ao Pai de vocês, que está nos céus.'],
+  ['João 12:26', 'Quem me serve precisa seguir-me; e onde estou, o meu servo também estará. Aquele que me serve, meu Pai o honrará.'],
+  ['1 Samuel 12:24', 'Somente temam o Senhor e sirvam-no fielmente de todo o coração; e considerem as grandes coisas que ele tem feito por vocês.'],
+  ['Isaías 6:8', 'Então ouvi a voz do Senhor, conclamando: “Quem enviarei? Quem irá por nós?” E eu respondi: “Eis-me aqui. Envia-me!”'],
+  ['1 Coríntios 10:31', 'Assim, quer vocês comam, quer bebam, quer façam qualquer outra coisa, façam tudo para a glória de Deus.'],
+  ['Colossenses 3:17', 'Tudo o que fizerem, seja em palavra seja em ação, façam-no em nome do Senhor Jesus, dando por meio dele graças a Deus Pai.'],
+  ['Mateus 25:40', 'O que vocês fizeram a algum dos meus menores irmãos, a mim o fizeram.'],
+  ['Provérbios 3:27', 'Quanto lhe for possível, não deixe de fazer o bem a quem dele precisa.'],
+  ['João 4:23', 'Está chegando a hora, e de fato já chegou, em que os verdadeiros adoradores adorarão o Pai em espírito e em verdade.'],
+  ['Eclesiastes 12:1', 'Lembre-se do seu Criador nos dias da sua juventude.'],
+  ['Atos 20:35', 'Há maior felicidade em dar do que em receber.'],
+  ['Lucas 22:27', 'Mas eu estou entre vocês como quem serve.'],
+  ['2 Timóteo 2:15', 'Procure apresentar-se a Deus aprovado, como obreiro que não tem do que se envergonhar e que maneja corretamente a palavra da verdade.'],
+  ['Romanos 12:10', 'Dediquem-se uns aos outros com amor fraternal. Prefiram dar honra aos outros mais do que a si próprios.'],
+  ['Salmos 119:9', 'Como pode o jovem manter pura a sua conduta? Vivendo de acordo com a tua palavra.']
+];
+function verseHtml(){
+  const day = Math.floor(parseD(todayStr()).getTime() / 864e5 + 0.5);
+  const [ref, txt] = VERSOS[((day % VERSOS.length) + VERSOS.length) % VERSOS.length];
+  return `<section class="verse" aria-label="Versículo do dia">
+    <div class="verse-top"><span class="eyebrow">Versículo do dia · ${esc(fmtD(todayStr()))}</span><span class="verse-star" aria-hidden="true">*</span></div>
+    <blockquote>${esc(txt)}</blockquote>
+    <cite>${esc(ref)}</cite>
+  </section>`;
+}
+
+/* ---------- Tarefas (to-do) ----------
+   A list grouped by deadline; each task opens a panel with checklist, notes, owner, deadline, priority and linked event. */
+const CHECK_ICON = '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12l5 5 9-10"/></svg>';
+const prioRank = x => x.prioridade === 'Alta' ? 0 : x.prioridade === 'Baixa' ? 2 : 1;
+const addDays = (iso, n) => { const d = parseD(iso); d.setDate(d.getDate() + n); return d.getFullYear() + '-' + pad(d.getMonth() + 1) + '-' + pad(d.getDate()); };
+const taskSort = (a, b) => (a.prazo || '9999').localeCompare(b.prazo || '9999') || prioRank(a) - prioRank(b) || String(a.titulo).localeCompare(String(b.titulo));
+function eventLabel(ref){
+  if(!ref) return '';
+  const [kind, id] = ref.split(':'); const it = findItem(kind, id);
+  return it ? it.titulo : '';
+}
+function todoRow(x){
+  const done = x.status === 'feito', itens = x.itens || [], ok = itens.filter(i => i.ok).length, ev = eventLabel(x.eventoRef);
+  const check = canWrite
+    ? `<button type="button" class="check${done ? ' on' : ''}" data-act="tcheck" data-id="${esc(x.id)}" aria-label="${done ? 'Reabrir tarefa' : 'Concluir tarefa'}">${CHECK_ICON}</button>`
+    : `<span class="check${done ? ' on' : ''}" aria-hidden="true">${CHECK_ICON}</span>`;
+  const st = prazoState(x);
+  return `<div class="todo${done ? ' done' : ''}${st ? ' dl-' + st : ''}" data-act="topen" data-id="${esc(x.id)}">${check}
+    <div class="tbody"><button type="button" class="tt" data-act="topen" data-id="${esc(x.id)}">${esc(x.titulo || 'Tarefa sem nome')}</button>
+      <div class="row">${x.status === 'fazendo' ? '<span class="chip vio">Fazendo</span>' : ''}${prioChip(x.prioridade)}${prazoChip(x)}${x.responsavel ? `<span class="chip">${esc(x.responsavel)}</span>` : ''}${itens.length ? `<span class="chip mono">${ok}/${itens.length} itens</span>` : ''}${ev ? `<span class="chip">Evento: ${esc(ev)}</span>` : ''}${x.descricao ? '<span class="chip">Anotações</span>' : ''}</div>
+    </div></div>`;
+}
+function tarefasView(){
+  const head = `<div class="bar"><h2>Tarefas</h2>${segBtns('tarefas', [['abertas','A fazer'],['feitas','Concluídas'],['todas','Todas']])}</div>`;
+  if(isLoading(['tarefas'])) return head + loadingBox();
+  const t = todayStr(), in7 = addDays(t, 7);
+  const quick = W(`<form id="tquick" class="tadd" novalidate><input id="tq-title" name="titulo" placeholder="Escreva uma nova tarefa e aperte Enter…" autocomplete="off" aria-label="Nova tarefa"><button type="submit" class="btn primary">+ Criar tarefa</button></form>`);
+  const open = state.tarefas.filter(x => x.status !== 'feito');
+  const feitas = state.tarefas.filter(x => x.status === 'feito').sort((a, b) => (b.concluidaEm || '').localeCompare(a.concluidaEm || ''));
+  const group = (title, list, cls = '') => list.length ? `<section class="tgroup ${cls}"><h3>${title} <span class="mono muted">${list.length}</span></h3>${list.map(todoRow).join('')}</section>` : '';
+  const openHtml = [
+    group('Atrasadas', open.filter(x => x.prazo && x.prazo < t).sort(taskSort), 'late'),
+    group('Hoje', open.filter(x => x.prazo === t).sort(taskSort)),
+    group('Próximos 7 dias', open.filter(x => x.prazo > t && x.prazo <= in7).sort(taskSort)),
+    group('Mais adiante', open.filter(x => x.prazo > in7).sort(taskSort)),
+    group('Sem prazo', open.filter(x => !x.prazo).sort(taskSort))
+  ].join('');
+  const mode = seg.tarefas || 'abertas';
+  let body = mode === 'feitas' ? group('Concluídas', feitas) : mode === 'todas' ? openHtml + group('Concluídas', feitas) : openHtml;
+  if(!body) body = mode === 'feitas'
+    ? empty('Nada concluído ainda', 'As tarefas que você marcar como feitas aparecem aqui.')
+    : `<div class="empty"><strong>Tudo em dia</strong><span>Nenhuma tarefa pendente. Escreva uma tarefa no campo acima, como comprar o lanche, preparar os slides ou confirmar o preletor.</span></div>`;
+  const legend = `<div class="row dl-legend" aria-label="Legenda de prazos"><span class="chip mono dl-ok">No prazo</span><span class="chip mono dl-soon">Faltam 3 dias ou menos</span><span class="chip mono dl-late">Atrasada</span></div>`;
+  return head + quick + legend + body;
+}
+
+let taskCtx = null;
+function openTask(id, draft){
+  const rec = id ? state.tarefas.find(x => x.id === id) : null;
+  taskCtx = {id, draft: JSON.parse(JSON.stringify(rec || draft || {}))};
+  dlgMode = 'task'; editing = null;
+  renderTask();
+  const dlg = $('#dlg'); if(!dlg.open) dlg.showModal();
+  if(!id) setTimeout(() => { const f = $('#t-titulo'); if(f) f.focus(); }, 0);
+}
+const itemRow = (i, n) => `<div class="titem${i.ok ? ' ok' : ''}"><input type="checkbox" id="ti-${n}-c" ${i.ok ? 'checked' : ''} aria-label="Item feito"${canWrite ? '' : ' disabled'}><input type="text" id="ti-${n}-t" value="${esc(i.t)}" aria-label="Item"${canWrite ? '' : ' readonly'}>${W(`<button type="button" class="x" data-act="titem-rm" aria-label="Remover item">×</button>`)}</div>`;
+function renderTask(){
+  const d = taskCtx.draft, done = d.status === 'feito', itens = d.itens || [];
+  const evs = byDate(agendaItems().filter(x => x.data && (x.data >= todayStr() || d.eventoRef === x.kind + ':' + x.id))).slice(0, 60);
+  const people = knownPeople();
+  $('#dlg').innerHTML = `<form id="tform" class="dwrap" novalidate>
+    <div class="dh"><div class="row" style="gap:12px;flex:1;min-width:0;flex-wrap:nowrap">
+      <button type="button" class="check big${done ? ' on' : ''}" data-act="tdcheck" aria-label="${done ? 'Reabrir tarefa' : 'Marcar como feita'}"${canWrite ? '' : ' disabled'}>${CHECK_ICON}</button>
+      <input id="t-titulo" name="titulo" class="ttitle" value="${esc(d.titulo || '')}" placeholder="Nome da tarefa" required autocomplete="off"${canWrite ? '' : ' readonly'}>
+    </div><button type="button" class="x" data-act="close" aria-label="Fechar">×</button></div>
+    <div class="dbody"><div class="tgrid">
+      <div class="stack" style="gap:18px;align-content:start">
+        <section>
+          <div class="sect-h"><h3>Checklist</h3><span class="mono muted" id="tprog-txt"></span></div>
+          <div class="tprog"><i id="tprog-bar"></i></div>
+          <div id="tlist">${itens.map((i, n) => itemRow(i, n)).join('')}</div>
+          ${W(`<div class="titem add"><span class="plus" aria-hidden="true">+</span><input type="text" id="t-newitem" placeholder="Adicionar item e apertar Enter" autocomplete="off" aria-label="Novo item da checklist"></div>`)}
+        </section>
+        <div class="fld"><label for="t-desc">Anotações</label><textarea id="t-desc" name="descricao" style="min-height:120px" placeholder="Detalhes, links, combinados…"${canWrite ? '' : ' readonly'}>${esc(d.descricao || '')}</textarea></div>
+      </div>
+      <aside class="tside">
+        <div class="fld"><label for="t-status">Situação</label><select id="t-status" name="status"${canWrite ? '' : ' disabled'}>${STATUS.map(([v, l]) => `<option value="${v}" ${(d.status || 'afazer') === v ? 'selected' : ''}>${l}</option>`).join('')}</select></div>
+        <div class="fld"><label for="t-resp">Responsável</label><input id="t-resp" name="responsavel" list="dl-people" value="${esc(d.responsavel || '')}" placeholder="Quem cuida disso?" autocomplete="off"${canWrite ? '' : ' readonly'}><datalist id="dl-people">${people.map(p => `<option value="${esc(p)}">`).join('')}</datalist></div>
+        <div class="fld"><label for="t-prazo-btn">Prazo</label>${dateWidget('t-prazo', 'prazo', d.prazo || '', false)}</div>
+        <div class="fld"><label for="t-prio">Prioridade</label><select id="t-prio" name="prioridade"${canWrite ? '' : ' disabled'}>${PRIOS.map(p => `<option ${(d.prioridade || 'Normal') === p ? 'selected' : ''}>${p}</option>`).join('')}</select></div>
+        <div class="fld"><label for="t-ev">Evento ligado</label><select id="t-ev" name="eventoRef"${canWrite ? '' : ' disabled'}><option value="">Nenhum</option>${evs.map(x => { const r = x.kind + ':' + x.id; return `<option value="${esc(r)}" ${d.eventoRef === r ? 'selected' : ''}>${esc(fmtD(x.data))} · ${esc(x.titulo)}</option>`; }).join('')}</select></div>
+        ${d.concluidaEm ? `<p class="muted" style="margin:0;font-size:13px">Concluída em ${esc(fmtD(d.concluidaEm.slice(0, 10)))}.</p>` : ''}
+      </aside>
+    </div></div>
+    ${canWrite ? `<div class="df"><span>${taskCtx.id ? '<button type="button" class="btn danger" data-act="tdel">Excluir</button>' : ''}</span><span class="row"><button type="button" class="btn" data-act="close">Cancelar</button><button type="submit" class="btn primary">Salvar tarefa</button></span></div>` : ''}
+  </form>`;
+  updateProg();
+}
+function updateProg(){
+  const rows = [...document.querySelectorAll('#tlist .titem')], ok = rows.filter(r => r.querySelector('input[type=checkbox]').checked).length;
+  const bar = $('#tprog-bar'), txt = $('#tprog-txt'); if(!bar) return;
+  bar.style.width = rows.length ? Math.round(ok / rows.length * 100) + '%' : '0%';
+  txt.textContent = rows.length ? `${ok} de ${rows.length}` : 'Sem itens';
+  rows.forEach(r => r.classList.toggle('ok', r.querySelector('input[type=checkbox]').checked));
+}
+function addChecklistItem(){
+  const inp = $('#t-newitem'); if(!inp || !inp.value.trim()) return;
+  $('#tlist').insertAdjacentHTML('beforeend', itemRow({t: inp.value.trim(), ok: false}, 'n' + (++rowSeq)));
+  inp.value = ''; inp.focus(); updateProg();
+}
+function readTask(form){
+  const old = taskCtx.id ? (state.tarefas.find(x => x.id === taskCtx.id) || {}) : {};
+  const rec = {...old, id: taskCtx.id || uid(),
+    titulo: form.elements.titulo.value.trim(), descricao: form.elements.descricao.value.trim(),
+    status: form.elements.status.value, responsavel: form.elements.responsavel.value.trim(),
+    prazo: form.elements.prazo.value, prioridade: form.elements.prioridade.value, eventoRef: form.elements.eventoRef.value,
+    itens: [...form.querySelectorAll('#tlist .titem')].map(r => ({t: r.querySelector('input[type=text]').value.trim(), ok: r.querySelector('input[type=checkbox]').checked})).filter(i => i.t)};
+  const pending = $('#t-newitem') && $('#t-newitem').value.trim(); if(pending) rec.itens.push({t: pending, ok: false});
+  rec.concluidaEm = rec.status === 'feito' ? (old.status === 'feito' && old.concluidaEm ? old.concluidaEm : new Date().toISOString()) : '';
+  if(!taskCtx.id) rec.criadoEm = new Date().toISOString();
+  return rec;
+}
+async function toggleTask(id){
+  const r = state.tarefas.find(x => x.id === id); if(!r) return;
+  const feito = r.status !== 'feito';
+  if(await save('tarefas', {...r, status: feito ? 'feito' : 'afazer', concluidaEm: feito ? new Date().toISOString() : ''})) toast(feito ? 'Tarefa concluída' : 'Tarefa reaberta');
+}
+document.addEventListener('submit', async ev => {
+  if(ev.target.id === 'tquick'){
+    ev.preventDefault();
+    const titulo = ev.target.elements.titulo.value.trim();
+    if(!titulo){ openTask(null, {status: 'afazer', prioridade: 'Normal', itens: []}); return; }
+    const rec = {id: uid(), titulo, status: 'afazer', prioridade: 'Normal', itens: [], criadoEm: new Date().toISOString()};
+    if(await save('tarefas', rec)){ toast('Tarefa criada'); const f = $('#tq-title'); if(f){ f.value = ''; f.focus(); } }
+  } else if(ev.target.id === 'tform'){
+    ev.preventDefault();
+    const form = ev.target;
+    if(!form.elements.titulo.value.trim()){ toast('Dê um nome para a tarefa.'); form.elements.titulo.focus(); return; }
+    const btn = form.querySelector('[type=submit]'); btn.disabled = true; btn.textContent = 'Salvando…';
+    if(await save('tarefas', readTask(form))){ toast('Tarefa salva'); $('#dlg').close(); }
+    else { btn.disabled = false; btn.textContent = 'Salvar tarefa'; }
+  }
+});
+document.addEventListener('keydown', ev => { if(ev.target.id === 't-newitem' && ev.key === 'Enter'){ ev.preventDefault(); addChecklistItem(); } });
+document.addEventListener('change', ev => {
+  if(ev.target.closest && ev.target.closest('#tlist')) updateProg();
+  if(ev.target.id === 't-status'){ const c = $('#dlg .check.big'); if(c) c.classList.toggle('on', ev.target.value === 'feito'); }
+});
+
+/* Home: one of the next three agenda items, with its ordem status and teams at a glance. */
+function homeEventCard(it, first){
+  const c = it.culto, esq = escalasFor(it), key = `data-kind="${it.kind}" data-id="${esc(it.id)}"`;
+  const pessoas = [c && c.preletor && 'Preletor: ' + esc(c.preletor), c && c.dirigente && 'Dirigente: ' + esc(c.dirigente), it.kind === 'eventos' && it.resp && 'Responsável: ' + esc(it.resp)].filter(Boolean);
+  return `<article class="card agenda-item${first ? ' next' : ''}" data-act="open" ${key}><div class="item">${tile(it.data)}<div class="body">
+    <div class="row"><span class="chip">${esc(it.tipo)}</span><span class="eyebrow">${it.hora ? esc(it.hora) + ' · ' : ''}${rel(it.data)}</span></div>
+    <h3 style="margin-top:6px"><button class="linkish" data-act="open" ${key}>${esc(it.titulo)}</button></h3>
+    ${it.kind === 'eventos' && c && c.tema ? `<div style="margin-top:2px">Tema: <b>${esc(c.tema)}</b></div>` : ''}
+    ${it.local || pessoas.length ? `<div class="muted" style="margin-top:4px">${[it.local && 'Local: ' + esc(it.local), ...pessoas].filter(Boolean).join(' · ')}</div>` : ''}
+    <div class="row" style="margin-top:10px">
+      ${c && (c.ordem || []).length ? '<span class="chip ok">Ordem pronta</span>' : '<span class="chip warn">Sem ordem do evento</span>'}
+      ${esq.length ? esq.map(e => `<span class="chip">${esc(e.area)}${e.responsavel ? ' · ' + esc(e.responsavel) : ''}</span>`).join('') : '<span class="chip warn">Sem equipes</span>'}
+    </div>
+    <div class="row" style="margin-top:10px">
+      <button class="btn" data-act="open" ${key}>Abrir evento</button>
+      ${c ? `<button class="btn ghost" data-act="pdf" data-id="${esc(c.id)}">Baixar PDF</button>` : ''}
+    </div>
+  </div></div></article>`;
+}
+
+const VIEWS = {
+  inicio(){
+    if(isLoading(COLS)) return loadingBox();
+    const t = todayStr();
+    const next3 = byDate(agendaItems().filter(x => x.data && x.data >= t)).slice(0, 3);
+    const open = state.tarefas.filter(x => x.status !== 'feito').sort((a,b) => (a.prazo||'9999').localeCompare(b.prazo||'9999'));
+    const late = open.filter(x => x.prazo && x.prazo < t).length;
+    const avs = [...state.avisos].sort((a,b) => (b.fixado?1:0)-(a.fixado?1:0) || (b.data||'').localeCompare(a.data||'')).slice(0,3);
+    return `<div class="bar"><h2>${(h => h >= 5 && h < 12 ? 'Bom dia' : h >= 12 && h < 18 ? 'Boa tarde' : 'Boa noite')(new Date().getHours())}, seja bem-vindo<em>!</em></h2></div>
+    ${verseHtml()}
+    <div class="home">
+      <div class="stack">
+        <div class="eyebrow">Próximos eventos</div>
+        ${next3.length ? next3.map((it, i) => homeEventCard(it, i === 0)).join('') + '<div><button class="btn ghost" data-act="tab" data-tab="agenda">Ver agenda completa</button></div>'
+          : `<div class="empty"><strong>Agenda livre</strong><span>Nenhum evento marcado daqui para a frente. Cadastre os próximos na Agenda.</span><button class="btn" data-act="tab" data-tab="agenda">Ir para a Agenda</button></div>`}
+      </div>
+      <div class="stack">
+        <section class="card">
+          <div class="sect-h"><h3>Tarefas abertas</h3><span class="count">${open.length}${late ? ` · ${late} atrasada${late>1?'s':''}` : ''}</span></div>
+          ${open.length ? `<div class="list">${open.slice(0,5).map(x => `<div data-act="topen" data-id="${esc(x.id)}" style="cursor:pointer"><span class="t">${esc(x.titulo)}${x.responsavel ? ` <span class="muted">· ${esc(x.responsavel)}</span>` : ''}</span>${prazoChip(x)}</div>`).join('')}</div>` : '<p class="muted" style="margin:0">Nenhuma tarefa pendente.</p>'}
+          <div style="margin-top:10px"><button class="btn ghost" data-act="tab" data-tab="tarefas">Abrir quadro de tarefas</button></div>
+        </section>
+        <section class="card">
+          <div class="sect-h"><h3>Mural de avisos</h3></div>
+          ${avs.length ? `<div class="list">${avs.map(a => `<div><span class="t">${a.fixado ? '<span class="chip key">Fixado</span> ' : ''}<b>${esc(a.titulo)}</b></span><span class="mono muted">${esc(fmtD(a.data))}</span></div>`).join('')}</div>` : '<p class="muted" style="margin:0">Nenhum aviso publicado.</p>'}
+          <div style="margin-top:10px"><button class="btn ghost" data-act="tab" data-tab="avisos">Ver mural</button></div>
+        </section>
+      </div>
+    </div>`;
+  },
+
+  agenda(){
+    const head = `<div class="bar"><h2>Agenda</h2><div class="row">${segBtns('agenda', [['proximos','Próximos'],['anteriores','Anteriores']])}${W('<button class="btn primary" data-act="new" data-col="eventos">+ Novo evento</button>')}</div></div>`;
+    if(isLoading(['eventos','cultos','escalas'])) return head + loadingBox();
+    const t = todayStr();
+    const fut = seg.agenda === 'proximos';
+    const list = byDate(agendaItems().filter(x => x.data && (fut ? x.data >= t : x.data < t)), fut ? 1 : -1);
+    if(!list.length) return head + (fut
+      ? empty('Agenda livre', 'Cadastre eventos como cultos especiais, retiros, acampamentos, reuniões e ações evangelísticas. Cada compromisso guarda a própria ordem do evento, as equipes e as informações.', 'eventos', '+ Novo evento')
+      : empty('Nada no histórico', 'Os compromissos que já passaram ficam aqui, com a ordem do evento e as equipes de cada um.'));
+    let out = head + '<p class="muted" style="margin:-6px 0 14px">Toque em um compromisso para ver e editar a ordem do evento, as equipes e as informações.</p>', cur = '';
+    list.forEach(it => {
+      const d = parseD(it.data), m = MOF[d.getMonth()] + ' ' + d.getFullYear();
+      if(m !== cur){ if(cur) out += '</div>'; out += `<div class="month">${m}</div><div class="stack">`; cur = m; }
+      const nEsc = escalasFor(it).length, c = it.culto;
+      const key = `data-kind="${it.kind}" data-id="${esc(it.id)}"`;
+      out += `<article class="card agenda-item" data-act="open" ${key}><div class="item">${tile(it.data, !fut)}<div class="body">
+        <div class="row"><span class="chip">${esc(it.tipo)}</span><span class="eyebrow">${it.hora ? esc(it.hora) + ' · ' : ''}${rel(it.data)}</span></div>
+        <h3 style="margin-top:6px"><button class="linkish" data-act="open" ${key}>${esc(it.titulo)}</button></h3>
+        ${it.kind === 'eventos' && c && c.tema ? `<div style="margin-top:2px">Tema: <b>${esc(c.tema)}</b></div>` : ''}
+        <div class="muted" style="margin-top:4px">${[it.local && 'Local: ' + esc(it.local), it.resp && (it.kind === 'cultos' ? 'Dirigente: ' : 'Responsável: ') + esc(it.resp)].filter(Boolean).join(' · ') || 'Sem responsável definido'}</div>
+        <div class="row" style="margin-top:10px">
+          ${c && (c.ordem || []).length ? '<span class="chip ok">Ordem do evento pronta</span>' : '<span class="chip warn">Sem ordem do evento</span>'}
+          ${nEsc ? `<span class="chip ok">${nEsc} equipe${nEsc > 1 ? 's' : ''}</span>` : '<span class="chip warn">Sem equipes</span>'}
+        </div>
+        <div class="row" style="margin-top:10px">
+          <button class="btn" data-act="open" data-tab="resp" ${key}>Informações</button>
+          <button class="btn" data-act="open" data-tab="escalas" ${key}>Equipes</button>
+          <button class="btn" data-act="open" data-tab="ordem" ${key}>Ordem do evento</button>
+          <button class="btn" data-act="open" data-tab="obs" ${key}>Observações</button>
+          ${c ? `<button class="btn ghost" data-act="pdf" data-id="${esc(c.id)}">Baixar PDF</button>` : ''}
+        </div>
+      </div></div></article>`;
+    });
+    return out + '</div>';
+  },
+
+  tarefas(){ return tarefasView(); },
+
+  avisos(){
+    const head = `<div class="bar"><h2>Mural de avisos</h2>${W('<button class="btn primary" data-act="new" data-col="avisos">+ Novo aviso</button>')}</div>`;
+    if(isLoading(['avisos'])) return head + loadingBox();
+    const list = [...state.avisos].sort((a,b) => (b.fixado?1:0)-(a.fixado?1:0) || (b.data||'').localeCompare(a.data||''));
+    if(!list.length) return head + empty('Nenhum aviso', 'Publique comunicados para a equipe: mudanças de horário, pedidos de oração, lembretes de reunião.', 'avisos', '+ Novo aviso');
+    return head + `<div class="notes">${list.map(a => `<article class="card note ${a.fixado ? 'pinned' : ''}">
+      <div class="row" style="justify-content:space-between"><span class="eyebrow">${esc(fmtD(a.data))}${a.autor ? ' · ' + esc(a.autor) : ''}</span>${a.fixado ? '<span class="chip key">Fixado</span>' : ''}</div>
+      <h3 style="font-size:18px;font-weight:700;margin-top:6px">${esc(a.titulo)}</h3>
+      ${a.texto ? `<p>${esc(a.texto)}</p>` : ''}
+      ${W(`<div class="row" style="margin-top:10px"><button class="btn ghost" data-act="edit" data-col="avisos" data-id="${esc(a.id)}">Editar</button></div>`)}
+    </article>`).join('')}</div>`;
+  }
+};
+
+/* ---------- Forms ---------- */
+const FORMS = {
+  eventos: {title:'evento', fields:[['titulo','Nome do evento','text',1,null,1],['tipo','Tipo','select',0,TIPOS],['local','Local','text'],['data','Data','date',1],['hora','Horário','time'],['responsavel','Responsável','text'],['descricao','Detalhes','textarea',0,null,1]]},
+  escalas: {title:'equipe', head:'equipe', ok:'Equipe salva', fields:[['area','Nome da equipe','combo',1,AREAS],['responsavel','Responsável pela equipe','text'],['data','Data','date',1],['obs','Observação','text',0,null,1]]},
+  tarefas: {title:'tarefa', fields:[['titulo','Tarefa','text',1,null,1],['responsavel','Responsável','text'],['prazo','Prazo','date'],['status','Situação','select',0,STATUS.map(s=>s[1])],['prioridade','Prioridade','select',0,PRIOS],['descricao','Detalhes','textarea',0,null,1]]},
+  avisos: {title:'aviso', fields:[['titulo','Título','text',1,null,1],['texto','Mensagem','textarea',1,null,1],['autor','Assinado por','text'],['data','Data','date',1],['fixado','Fixar no topo do mural','checkbox']]},
+  cultos: {title:'evento', head:'ordem do evento', fields:[['nome','Nome do evento','text',0,null,1],['tipo','Tipo de evento','select',0,['Evento do Youth', ...TIPOS]],['data','Data','date',1],['hora','Horário','time'],['tema','Tema da mensagem','text',0,null,1],['serie','Série (opcional)','text'],['textos','Texto(s) bíblico(s)','text',0,null,1],['preletor','Preletor','text'],['dirigente','Dirigente','text'],['louvor','Ministro de louvor','text'],['obs','Observações','textarea',0,null,1]]}
+};
+
+/* Date: inline month calendar. Time: hour + minute lists. Both keep the value in a hidden input
+   named like the field, so the forms read them the same way as before. */
+const dpLabel = v => { if(!v) return 'Escolher data'; const d = parseD(v); return `${WDF[d.getDay()]}, ${d.getDate()} de ${MOF[d.getMonth()].toLowerCase()} de ${d.getFullYear()}`; };
+const CAL_ICON = '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><rect x="3" y="5" width="18" height="16" rx="2"/><path d="M3 10h18M8 3v4M16 3v4"/></svg>';
+function dateWidget(id, name, val, req){
+  return `<div class="dp" data-req="${req ? 1 : ''}"><input type="hidden" id="${id}" name="${name}" value="${esc(val)}">
+    <button type="button" class="dp-btn" id="${id}-btn" data-act="dp-toggle" aria-expanded="false">${CAL_ICON}<span class="dp-label${val ? '' : ' muted'}">${esc(dpLabel(val))}</span></button>
+    <div class="dp-pop" hidden></div></div>`;
+}
+function renderCal(dp){
+  const pop = dp.querySelector('.dp-pop'), val = dp.querySelector('input').value;
+  const [y, m] = dp.dataset.ym.split('-').map(Number);
+  const start = new Date(y, m - 1, 1).getDay(), days = new Date(y, m, 0).getDate(), t = todayStr();
+  let cells = '';
+  for(let i = 0; i < start; i++) cells += '<span></span>';
+  for(let d = 1; d <= days; d++){
+    const iso = `${y}-${pad(m)}-${pad(d)}`;
+    cells += `<button type="button" data-act="dp-pick" data-date="${iso}" class="${iso === val ? 'sel' : ''}${iso === t ? ' today' : ''}" aria-label="${esc(dpLabel(iso))}">${d}</button>`;
+  }
+  pop.innerHTML = `<div class="dp-head"><button type="button" data-act="dp-nav" data-dir="-1" aria-label="Mês anterior">‹</button><b>${MOF[m - 1]} ${y}</b><button type="button" data-act="dp-nav" data-dir="1" aria-label="Próximo mês">›</button></div>
+    <div class="dp-grid">${['D','S','T','Q','Q','S','S'].map(w => `<i>${w}</i>`).join('')}${cells}</div>
+    <div class="dp-foot"><button type="button" data-act="dp-pick" data-date="${t}">Hoje</button>${dp.dataset.req ? '' : '<button type="button" data-act="dp-pick" data-date="">Sem data</button>'}</div>`;
+}
+function timeWidget(id, attr, val, label){
+  const [h, mi] = (val || '').split(':');
+  const mins = [...Array(12)].map((_, i) => pad(i * 5));
+  if(mi && !mins.includes(mi)){ mins.push(mi); mins.sort(); }
+  return `<div class="tp"><input type="hidden" ${attr} value="${esc(val || '')}">
+    <select class="tp-h" id="${id}-h" aria-label="${label} — hora"><option value="">--</option>${[...Array(24)].map((_, i) => `<option ${pad(i) === h ? 'selected' : ''}>${pad(i)}</option>`).join('')}</select>
+    <b>:</b>
+    <select class="tp-m" id="${id}-m" aria-label="${label} — minutos"><option value="">--</option>${mins.map(x => `<option ${x === mi ? 'selected' : ''}>${x}</option>`).join('')}</select></div>`;
+}
+document.addEventListener('change', ev => {
+  const tp = ev.target.closest('.tp'); if(!tp) return;
+  const hs = tp.querySelector('.tp-h'), ms = tp.querySelector('.tp-m');
+  if(hs.value && !ms.value) ms.value = '00';
+  tp.querySelector('input').value = hs.value ? `${hs.value}:${ms.value}` : '';
+});
+function missingDate(form){ return [...form.querySelectorAll('.dp[data-req="1"]')].find(dp => !dp.querySelector('input').value); }
+
+function fieldHtml([name,label,type,req,opts,full], val){
+  const id = 'f-' + name, r = req ? ' required' : '';
+  if(type === 'date') return `<div class="fld${full ? ' full' : ''}"><label for="${id}-btn">${label}</label>${dateWidget(id, name, val, req)}</div>`;
+  if(type === 'time') return `<div class="fld${full ? ' full' : ''}"><label for="${id}-h">${label}</label>${timeWidget(id, `id="${id}" name="${name}"`, val, label)}</div>`;
+  if(type === 'checkbox') return `<div class="fld check full"><input type="checkbox" id="${id}" name="${name}" ${val ? 'checked' : ''}><label for="${id}" style="text-transform:none;letter-spacing:0;font-size:14px;color:var(--ink)">${label}</label></div>`;
+  let ctl;
+  if(type === 'select') ctl = `<select id="${id}" name="${name}"${r}>${opts.map(o => `<option ${o === val ? 'selected' : ''}>${esc(o)}</option>`).join('')}</select>`;
+  else if(type === 'combo') ctl = `<input type="text" id="${id}" name="${name}" value="${esc(val)}"${r} list="dl-${name}" autocomplete="off" placeholder="Digite ou escolha uma sugestão"><datalist id="dl-${name}">${opts.map(o => `<option value="${esc(o)}">`).join('')}</datalist>`;
+  else if(type === 'textarea') ctl = `<textarea id="${id}" name="${name}"${r}>${esc(val)}</textarea>`;
+  else ctl = `<input type="${type}" id="${id}" name="${name}" value="${esc(val)}"${r} autocomplete="off">`;
+  return `<div class="fld${full ? ' full' : ''}"><label for="${id}">${label}</label>${ctl}</div>`;
+}
+let rowSeq = 0;
+const songRow = (m={}) => { const n = ++rowSeq; return `<div class="rrow m"><input id="ms-${n}-t" data-k="titulo" placeholder="Música" value="${esc(m.titulo)}" aria-label="Música"><input id="ms-${n}-a" data-k="artista" placeholder="Artista / ministério" value="${esc(m.artista)}" aria-label="Artista"><input id="ms-${n}-k" data-k="tom" placeholder="Tom" value="${esc(m.tom)}" aria-label="Tom"><button type="button" class="x" data-act="rmrow" aria-label="Remover">×</button></div>`; };
+const ordRow = (o={}) => { const n = ++rowSeq; return `<div class="rrow o">${timeWidget('od-' + n, 'data-k="hora"', o.hora, 'Horário')}<input id="od-${n}-i" data-k="item" placeholder="Momento (ex.: Louvor)" value="${esc(o.item)}" aria-label="Momento"><input id="od-${n}-r" data-k="responsavel" placeholder="Responsável" value="${esc(o.responsavel)}" aria-label="Responsável"><button type="button" class="x" data-act="rmrow" aria-label="Remover">×</button></div>`; };
+
+let editing = null;
+function openForm(col, rec, defaults={}){
+  const f = FORMS[col], isNew = !rec || !rec.id;
+  const base = rec || {...defaults};
+  if(col === 'tarefas'){ base.status = (STATUS.find(s => s[0] === (base.status || 'afazer')) || STATUS[0])[1]; }
+  if(col === 'avisos' && !base.data) base.data = todayStr();
+  const names = f.fields.map(fd => fd[0]);
+  const extra = isNew ? Object.fromEntries(Object.entries(base).filter(([k]) => !names.includes(k) && !['id','musicas','ordem','criadoEm','atualizadoEm'].includes(k))) : {};
+  editing = {col, id: rec && rec.id, extra, back: dlgMode === 'detail' ? {...detailCtx} : null};
+  dlgMode = 'form';
+  const dlg = $('#dlg');
+  let body, actions;
+  if(col === 'cultos'){
+    const ms = (base.musicas && base.musicas.length) ? base.musicas : [{},{},{}];
+    const od = base.ordem || [];
+    const blocks = {
+      '#musicas': `<div class="rep" id="rep-musicas"><div class="rep-h"><b>Músicas</b><button type="button" class="btn ghost" data-act="addrow" data-rep="musicas">+ Música</button></div><div class="rows">${ms.map(songRow).join('')}</div></div>`,
+      '#ordem': `<div class="rep" id="rep-ordem"><div class="rep-h"><b>Momentos do evento</b><span class="row"><button type="button" class="btn ghost" data-act="padrao">Usar ordem padrão</button><button type="button" class="btn ghost" data-act="addrow" data-rep="ordem">+ Momento</button></span></div><div class="rows">${od.map(ordRow).join('') || '<p class="muted hint" style="margin:0;font-size:14px">Adicione os momentos com horário e responsável, ou comece pela ordem padrão.</p>'}</div></div>`,
+      '#resumo': '<div id="resumo"></div>'
+    };
+    const fmap = Object.fromEntries(f.fields.map(fd => [fd[0], fd]));
+    body = `<nav class="steps" aria-label="Etapas">${CULTO_STEPS.map(([l], i) => `<button type="button" data-act="step" data-step="${i}"><span>${i+1}</span>${l}</button>`).join('')}</nav>`
+      + CULTO_STEPS.map(([, items, hint], i) => `<div class="db" data-panel="${i}"${i ? ' hidden' : ''}><p class="hint-step">${hint}</p>${items.filter(k => !(base.eventoId && (k === 'nome' || k === 'tipo'))).map(k => k[0] === '#' ? blocks[k] : fieldHtml(fmap[k], base[k] ?? '')).join('')}</div>`).join('');
+    actions = `<button type="button" class="btn" data-act="prev">← Anterior</button><button type="submit" class="btn" id="btn-save">Salvar</button><button type="button" class="btn primary" data-act="next">Próximo →</button><button type="submit" class="btn primary" data-pdf="1">Salvar e baixar PDF</button>`;
+  } else {
+    body = `<div class="db">${f.fields.map(fd => fieldHtml(fd, base[fd[0]] ?? '')).join('')}</div>`;
+    actions = `<button type="button" class="btn" data-act="close">Cancelar</button><button type="submit" class="btn primary" id="btn-save">Salvar</button>`;
+  }
+  dlg.innerHTML = `<form id="frm" novalidate>
+    <div class="dh"><h2>${f.head ? (isNew ? 'Nova ' : 'Editar ') + f.head : (isNew ? 'Novo ' : 'Editar ') + f.title}</h2><button type="button" class="x" data-act="close" aria-label="Fechar">×</button></div>
+    ${body}
+    <div class="df"><span>${isNew ? '' : `<button type="button" class="btn danger" data-act="delete">Excluir</button>`}</span><span class="row">${actions}</span></div>
+  </form>`;
+  if(!dlg.open) dlg.showModal();
+  if(col === 'cultos') setStep(0);
+  else { const first = dlg.querySelector('input,select,textarea'); if(first) first.focus(); }
+}
+
+const CULTO_STEPS = [
+  ['Dados gerais', ['nome','tipo','data','hora','serie','dirigente'], 'Quando é o evento e quem dirige.'],
+  ['Palavra', ['tema','textos','preletor'], 'O tema da mensagem, os textos bíblicos e quem vai pregar.'],
+  ['Louvor', ['louvor','#musicas'], 'Quem ministra o louvor e as músicas, com o tom da banda.'],
+  ['Ordem do evento', ['#ordem'], 'O roteiro com o horário e o responsável de cada momento.'],
+  ['Revisão', ['obs','#resumo'], 'Confira tudo, acrescente observações e gere o PDF para a equipe.']
+];
+let step = 0;
+function setStep(i){
+  step = Math.max(0, Math.min(CULTO_STEPS.length - 1, i));
+  const last = step === CULTO_STEPS.length - 1;
+  document.querySelectorAll('#dlg [data-panel]').forEach(p => p.hidden = +p.dataset.panel !== step);
+  document.querySelectorAll('#dlg .steps button').forEach(b => b.setAttribute('aria-current', +b.dataset.step === step ? 'step' : 'false'));
+  $('#dlg [data-act=prev]').hidden = step === 0;
+  $('#dlg [data-act=next]').hidden = last;
+  $('#dlg [data-pdf]').hidden = !last;
+  if(last) renderResumo();
+  const first = $(`#dlg [data-panel="${step}"]`).querySelector('input,select,textarea');
+  if(first) first.focus();
+}
+function renderResumo(){
+  const c = readForm($('#frm'), 'cultos'), warn = [];
+  if(!c.data) warn.push('Falta a data do evento.');
+  if(!c.tema) warn.push('Falta o tema da mensagem.');
+  if(!c.preletor) warn.push('Nenhum preletor definido.');
+  if(!c.dirigente) warn.push('Nenhum dirigente definido.');
+  if(!c.musicas.length) warn.push('Nenhuma música registrada.');
+  if(!c.ordem.length) warn.push('A ordem do evento está vazia.');
+  const esq = c.data ? state.escalas.filter(e => e.data === c.data).length : 0;
+  $('#resumo').innerHTML = `<div class="eyebrow">${esc(longDate(c.data))}${c.hora ? ' · ' + esc(c.hora) : ''}</div>
+    <h3>${esc(c.tema || 'Evento sem tema definido')}</h3>
+    <div class="muted">${[c.preletor && 'Preletor: ' + esc(c.preletor), c.dirigente && 'Dirigente: ' + esc(c.dirigente), c.louvor && 'Louvor: ' + esc(c.louvor)].filter(Boolean).join(' · ')}</div>
+    <div class="row"><span class="chip">${c.musicas.length} música${c.musicas.length === 1 ? '' : 's'}</span><span class="chip">${c.ordem.length} momento${c.ordem.length === 1 ? '' : 's'}</span><span class="chip">${esq} equipe${esq === 1 ? '' : 's'} nesta data</span></div>
+    ${warn.map(w => `<div class="warn">${w}</div>`).join('')}
+    <div class="muted" style="font-size:13px">O PDF traz o cabeçalho do Youth, os dados do evento, a ordem com horários, as músicas com tom, as equipes e as observações.</div>`;
+}
+
+function collectRows(rep){
+  return [...document.querySelectorAll(`#rep-${rep} .rrow`)].map(r => {
+    const o = {}; r.querySelectorAll('input').forEach(i => o[i.dataset.k] = i.value.trim()); return o;
+  }).filter(o => rep === 'musicas' ? o.titulo : o.item);
+}
+function readForm(form, col){
+  const rec = {};
+  FORMS[col].fields.forEach(([name,,type]) => {
+    const el = form.elements[name];
+    if(!el) return;
+    rec[name] = type === 'checkbox' ? el.checked : el.value.trim();
+  });
+  if(col === 'tarefas') rec.status = (STATUS.find(s => s[1] === rec.status) || STATUS[0])[0];
+  if(col === 'cultos'){ rec.musicas = collectRows('musicas'); rec.ordem = collectRows('ordem'); }
+  return rec;
+}
+
+document.addEventListener('submit', async ev => {
+  if(ev.target.id !== 'frm') return;
+  ev.preventDefault();
+  const form = ev.target;
+  const noDate = missingDate(form);
+  if(noDate){
+    const p = noDate.closest('[data-panel]'); if(p) setStep(+p.dataset.panel);
+    toast('Escolha a data no calendário.'); noDate.querySelector('.dp-btn').click(); return;
+  }
+  if(!form.checkValidity()){
+    const bad = form.querySelector(':invalid'), p = bad && bad.closest('[data-panel]');
+    if(p) setStep(+p.dataset.panel);
+    form.reportValidity(); return;
+  }
+  const wantPdf = !!(ev.submitter && ev.submitter.dataset.pdf);
+  const {col, id, extra, back} = editing;
+  const old = id ? (state[col].find(x => x.id === id) || {}) : {};
+  const rec = {...old, ...extra, ...readForm(form, col), id: id || uid()};
+  if(!id) rec.criadoEm = new Date().toISOString();
+  const btns = form.querySelectorAll('[type=submit]'); btns.forEach(b => b.disabled = true);
+  const ok = await save(col, rec);
+  if(ok){
+    toast(FORMS[col].ok || (FORMS[col].title[0].toUpperCase() + FORMS[col].title.slice(1) + ' salvo'));
+    if(back) openDetail(back.kind, back.id, back.tab);
+    else if(col === 'eventos' && !id) openDetail('eventos', rec.id, 'resp');
+    else $('#dlg').close();
+    if(wantPdf) cultoPdf(rec);
+    const linked = col === 'eventos' && id && state.cultos.find(x => x.eventoId === id);
+    if(linked && (linked.data !== rec.data || linked.hora !== rec.hora)) save('cultos', {...linked, data: rec.data, hora: rec.hora});
+  }
+  else btns.forEach(b => b.disabled = false);
+});
+
+document.addEventListener('submit', async ev => {
+  if(ev.target.id !== 'qedit') return;
+  ev.preventDefault();
+  const form = ev.target;
+  const noDate = missingDate(form);
+  if(noDate){ toast('Escolha a data no calendário.'); noDate.querySelector('.dp-btn').click(); return; }
+  if(!form.checkValidity()){ form.reportValidity(); return; }
+  const it = findItem(detailCtx.kind, detailCtx.id); if(!it) return;
+  const rec = {...it.rec};
+  qFields(it).forEach(([name]) => { rec[name] = form.elements[name].value.trim(); });
+  const btn = form.querySelector('[type=submit]'); btn.disabled = true; btn.textContent = 'Salvando…';
+  if(await save(it.kind, rec)){
+    toast('Evento salvo');
+    if(it.kind === 'eventos' && it.culto && (it.culto.data !== rec.data || it.culto.hora !== rec.hora)) await save('cultos', {...it.culto, data: rec.data, hora: rec.hora});
+    detailCtx.editOpen = false; renderDetail();
+  } else { btn.disabled = false; btn.textContent = 'Salvar alterações'; }
+});
+
+document.addEventListener('input', ev => { if(ev.target.id === 'obs-text' && detailCtx){ detailCtx.obsDirty = true; renderMentionList(ev.target); } });
+document.addEventListener('change', ev => { if(ev.target.id === 'me-sel'){ setMe(ev.target.value); renderBell(); } });
+document.addEventListener('submit', async ev => {
+  if(ev.target.id !== 'obsform') return;
+  ev.preventDefault();
+  const it = findItem(detailCtx.kind, detailCtx.id); if(!it) return;
+  const btn = ev.target.querySelector('[type=submit]'); btn.disabled = true; btn.textContent = 'Salvando…';
+  const val = ev.target.elements.observacoes.value.trim();
+  if(await save(it.kind, {...it.rec, observacoes: val, marcados: computeMentions(val), obsEm: new Date().toISOString()})){
+    toast('Observações salvas'); detailCtx.obsDirty = false; detailCtx.picked = []; renderDetail();
+  } else { btn.disabled = false; btn.textContent = 'Salvar observações'; }
+});
+
+/* ---------- Marcações (@) e sino ----------
+   Mentions are matched by name, so people without a claude.ai account can be marked.
+   "Who am I" and what was already read stay in this browser only. */
+const norm = s => String(s || '').normalize('NFD').replace(/[̀-ͯ]/g, '').toLowerCase().replace(/\s+/g, ' ').trim();
+function knownPeople(){
+  const m = new Map();
+  const add = v => String(v || '').split(/\s*,\s*/).forEach(x => { x = x.trim(); if(x && x.length <= 60 && !m.has(norm(x))) m.set(norm(x), x); });
+  state.eventos.forEach(e => { add(e.responsavel); (e.marcados || []).forEach(add); });
+  state.cultos.forEach(c => { add(c.dirigente); add(c.preletor); add(c.louvor); (c.ordem || []).forEach(o => add(o.responsavel)); (c.marcados || []).forEach(add); });
+  state.escalas.forEach(e => add(e.responsavel));
+  state.tarefas.forEach(t => add(t.responsavel));
+  return [...m.values()].sort((a, b) => a.localeCompare(b, 'pt'));
+}
+function computeMentions(text){
+  const nt = norm(text), out = new Map();
+  [...knownPeople(), ...((detailCtx && detailCtx.picked) || [])].forEach(n => { if(nt.includes('@' + norm(n))) out.set(norm(n), n); });
+  for(const m of text.matchAll(/@([\p{L}][\p{L}\p{N}.\-]*)/gu)){
+    const tok = m[1].replace(/[.\-]+$/, ''), k = norm(tok);
+    if(tok && ![...out.keys()].some(x => x === k || x.startsWith(k + ' '))) out.set(k, tok);
+  }
+  const keys = [...out.keys()];
+  return keys.filter(k => !keys.some(o => o !== k && o.startsWith(k + ' '))).map(k => out.get(k));
+}
+function withMentions(text, names){
+  let h = esc(text); const marks = [];
+  [...names].sort((a, b) => b.length - a.length).forEach(n => { const t = esc('@' + n); if(h.includes(t)){ h = h.split(t).join('\u0000' + marks.length + '\u0000'); marks.push(t); } });
+  return h.replace(/\u0000(\d+)\u0000/g, (_, i) => `<span class="mention">${marks[i]}</span>`);
+}
+function mentionQuery(ta){ const m = ta.value.slice(0, ta.selectionStart).match(/@([^@\n]{0,40})$/); return m ? m[1] : null; }
+function renderMentionList(ta){
+  const box = $('#mlist'); if(!box) return;
+  const q = mentionQuery(ta);
+  if(q === null){ box.hidden = true; return; }
+  const nq = norm(q);
+  const opts = knownPeople().filter(n => !nq || norm(n).startsWith(nq) || norm(n).split(' ').some(w => w.startsWith(nq))).slice(0, 6);
+  if(!opts.length && /\s/.test(q)){ box.hidden = true; return; }
+  const exact = opts.some(n => norm(n) === nq);
+  box.innerHTML = opts.map(n => `<button type="button" data-act="pick" data-name="${esc(n)}">@${esc(n)}</button>`).join('')
+    + (q.trim() && !exact ? `<button type="button" data-act="pick" data-name="${esc(q.trim())}">Marcar “${esc(q.trim())}”</button>` : '')
+    || '<span class="muted" style="padding:6px 8px;font-size:13px">Digite o nome de quem você quer marcar.</span>';
+  box.hidden = false;
+}
+function pickMention(name){
+  const ta = $('#obs-text'); if(!ta) return;
+  const q = mentionQuery(ta); if(q === null) return;
+  const pos = ta.selectionStart, start = pos - q.length - 1;
+  ta.value = ta.value.slice(0, start) + '@' + name + ' ' + ta.value.slice(pos);
+  const caret = start + name.length + 2;
+  ta.focus(); ta.setSelectionRange(caret, caret);
+  detailCtx.picked = [...(detailCtx.picked || []), name]; detailCtx.obsDirty = true;
+  $('#mlist').hidden = true;
+}
+
+let meMem = null, seenMem = [];
+const getMe = () => { try { return localStorage.getItem('youth-me') || meMem; } catch(e){ return meMem; } };
+const setMe = v => { meMem = v || null; try { if(v) localStorage.setItem('youth-me', v); else localStorage.removeItem('youth-me'); } catch(e){} };
+const getSeen = () => { try { return JSON.parse(localStorage.getItem('youth-seen') || 'null') || seenMem; } catch(e){ return seenMem; } };
+const markSeen = k => { const s = getSeen(); if(s.includes(k)) return; s.push(k); seenMem = s; try { localStorage.setItem('youth-seen', JSON.stringify(s.slice(-500))); } catch(e){} };
+const mentionKey = it => it.kind + ':' + it.id + ':' + (it.rec.obsEm || '');
+function myMentions(){
+  const me = getMe(); if(!me) return [];
+  const k = norm(me);
+  return agendaItems().filter(it => (it.rec.marcados || []).some(n => norm(n) === k)).map(it => ({it, key: mentionKey(it)}));
+}
+function renderBell(){
+  const seen = getSeen(), list = myMentions();
+  const unread = list.filter(m => !seen.includes(m.key)).length;
+  const c = $('#bellcount'); c.textContent = unread; c.hidden = !unread;
+  $('#bell').setAttribute('aria-label', unread ? `Marcações: ${unread} nova${unread > 1 ? 's' : ''}` : 'Marcações');
+  const pop = $('#bellpop'); if(pop.hidden) return;
+  const me = getMe(), people = knownPeople();
+  if(me && !people.some(n => norm(n) === norm(me))) people.unshift(me);
+  const sorted = list.map(m => ({...m, novo: !seen.includes(m.key)})).sort((a, b) => (b.novo - a.novo) || (b.it.rec.obsEm || '').localeCompare(a.it.rec.obsEm || ''));
+  pop.innerHTML = `<div class="fld"><label for="me-sel">Quem é você?</label><select id="me-sel"><option value="">Escolha seu nome</option>${people.map(n => `<option ${me && norm(me) === norm(n) ? 'selected' : ''}>${esc(n)}</option>`).join('')}</select></div>
+    ${!me ? '<p class="muted" style="margin:0;font-size:14px">Escolha seu nome para ver em quais eventos você foi marcado. A escolha fica salva só neste aparelho.</p>'
+      : sorted.length ? `<div class="eyebrow">Você foi marcado em</div>${sorted.map(m => `<button type="button" class="notif ${m.novo ? 'unread' : ''}" data-act="notif" data-kind="${m.it.kind}" data-id="${esc(m.it.id)}">
+          <span class="row" style="justify-content:space-between"><b>${esc(m.it.titulo)}</b>${m.novo ? '<span class="chip ok">Nova</span>' : ''}</span>
+          <span class="muted mono">${esc(fmtD(m.it.data))}</span>
+          <span style="font-size:13px;overflow-wrap:anywhere">${esc((m.it.rec.observacoes || '').slice(0, 110))}${(m.it.rec.observacoes || '').length > 110 ? '…' : ''}</span>
+        </button>`).join('')}`
+      : '<p class="muted" style="margin:0;font-size:14px">Nenhuma marcação para você ainda.</p>'}`;
+}
+
+/* ---------- Backup ---------- */
+async function saveFile(filename, data){
+  let dl = null;
+  try { dl = window.claude && typeof window.claude.use === 'function' ? await window.claude.use('downloads') : null; } catch(e){}
+  if(!dl){
+    // Standalone webapp: a normal browser download.
+    const url = URL.createObjectURL(data instanceof Blob ? data : new Blob([data])), a = document.createElement('a');
+    a.href = url; a.download = filename; document.body.appendChild(a); a.click(); a.remove();
+    setTimeout(() => URL.revokeObjectURL(url), 4000); toast('Download iniciado'); return;
+  }
+  try { await dl.save({filename, data}); toast('Arquivo salvo'); }
+  catch(e){ if(e && e.code === 'declined') return; toast(e && e.code === 'rate_limited' ? 'Já existe um download aguardando confirmação.' : 'Não foi possível baixar o arquivo.'); }
+}
+async function downloadBackup(csv){
+  if(isLoading(COLS)){ toast('Aguarde os dados carregarem.'); return; }
+  if(!csv){
+    const data = {painel: 'Painel Youth', geradoEm: new Date().toISOString(), colecoes: Object.fromEntries(COLS.map(c => [c, state[c]]))};
+    return saveFile(`backup-painel-youth-${todayStr()}.json`, new Blob([JSON.stringify(data, null, 2)], {type: 'application/json'}));
+  }
+  const q = v => '"' + String(v ?? '').replace(/"/g, '""').replace(/\r?\n/g, ' ') + '"';
+  const head = ['Data','Horário','Evento','Tipo','Local','Responsável','Tema','Preletor','Dirigente','Equipes','Detalhes','Observações'];
+  const rows = byDate(agendaItems().filter(x => x.data)).map(it => {
+    const c = it.culto || {};
+    return [it.data.split('-').reverse().join('/'), it.hora, it.titulo, it.tipo, it.local, it.resp, c.tema, c.preletor, c.dirigente,
+      escalasFor(it).map(e => e.area + (e.responsavel ? ' (' + e.responsavel + ')' : '')).join(', '), it.kind === 'eventos' ? it.rec.descricao : '', it.rec.observacoes].map(q).join(';');
+  });
+  return saveFile(`agenda-youth-${todayStr()}.csv`, new Blob(['﻿' + [head.map(q).join(';'), ...rows].join('\r\n')], {type: 'text/csv'}));
+}
+
+/* ---------- PDF ---------- */
+let LOGO_DATA = null;
+fetch('youth-logo.png').then(r => r.ok ? r.blob() : null).then(b => { if(!b) return; const fr = new FileReader(); fr.onload = () => { LOGO_DATA = fr.result; }; fr.readAsDataURL(b); }).catch(() => {});
+function longDate(s){ if(!s) return 'Data a definir'; const d = parseD(s); return `${WDF[d.getDay()]}, ${d.getDate()} de ${MOF[d.getMonth()].toLowerCase()} de ${d.getFullYear()}`; }
+
+function buildCultoPdf(c){
+  const {jsPDF} = window.jspdf;
+  const doc = new jsPDF({unit:'mm', format:'a4'});
+  const PW = 210, PH = 297, M = 18, CW = PW - 2*M;
+  const INK = [11,11,12], MUTED = [94,90,85], ACC = [232,0,63], SUN = [255,208,4], LINE = [226,222,214], ZEBRA = [241,239,234];
+  let y = 0;
+  const color = c3 => doc.setTextColor(c3[0], c3[1], c3[2]);
+  const font = (style, size) => { doc.setFont('helvetica', style); doc.setFontSize(size); };
+  const ensure = h => { if(y + h > PH - 18){ doc.addPage(); y = 20; } };
+  const section = title => {
+    ensure(18); y += 6;
+    font('bold', 9); color(ACC); doc.text(title.toUpperCase(), M, y, {charSpace:0.4});
+    y += 2.5; doc.setDrawColor(INK[0], INK[1], INK[2]); doc.setLineWidth(0.5); doc.line(M, y, PW - M, y); y += 6;
+  };
+
+  doc.setFillColor(INK[0], INK[1], INK[2]); doc.rect(0, 0, PW, 32, 'F');
+  let logoOk = false;
+  if(LOGO_DATA){ try { doc.addImage(LOGO_DATA, 'PNG', M, 5, 42, 18); logoOk = true; } catch(e){} }
+  if(!logoOk){ font('bold', 26); doc.setTextColor(255,255,255); doc.text('YOUTH*', M, 18); }
+  font('normal', 9); doc.setTextColor(163,160,154); doc.text('MINISTÉRIO DE JOVENS · ORDEM DO EVENTO', M, 28.5, {charSpace:0.3});
+  [[254,0,62,4],[255,208,4,3],[90,17,231,2],[135,135,135,1]].reduce((x, [r,g,b,w]) => { const ww = PW * w / 10; doc.setFillColor(r,g,b); doc.rect(x, 32, ww, 1.8, 'F'); return x + ww; }, 0);
+  doc.setFillColor(SUN[0], SUN[1], SUN[2]); doc.roundedRect(PW - M - 46, 11, 46, 12, 2, 2, 'F');
+  font('bold', 10); doc.setTextColor(43,34,0);
+  doc.text(c.data ? c.data.split('-').reverse().join('/') : 'A definir', PW - M - 23, 16, {align:'center'});
+  font('normal', 8); doc.text(c.hora ? 'às ' + c.hora : 'horário a definir', PW - M - 23, 20.5, {align:'center'});
+
+  y = 44;
+  font('bold', 10); color(MUTED); doc.text(longDate(c.data).toUpperCase() + (c.hora ? '  ·  ' + c.hora : ''), M, y);
+  y += 9;
+  font('bold', 21); color(INK);
+  const tl = doc.splitTextToSize(c.tema || 'Evento sem tema definido', CW);
+  doc.text(tl, M, y); y += tl.length * 8.5;
+  if(c.serie){ font('normal', 11); color(MUTED); doc.text('Série: ' + c.serie, M, y); y += 6; }
+
+  const info = [['Preletor', c.preletor], ['Dirigente', c.dirigente], ['Ministro de louvor', c.louvor], ['Texto bíblico', c.textos]].filter(x => x[1]);
+  if(info.length){
+    y += 3;
+    const colW = (CW - 8) / 2;
+    for(let i = 0; i < info.length; i += 2){
+      const pair = info.slice(i, i + 2);
+      const lines = pair.map(([, v]) => { font('bold', 11.5); return doc.splitTextToSize(v, colW); });
+      const h = 6 + Math.max(...lines.map(l => l.length)) * 5.2;
+      ensure(h + 2);
+      pair.forEach(([k], j) => {
+        const x = M + j * (colW + 8);
+        font('bold', 7.5); color(MUTED); doc.text(k.toUpperCase(), x, y, {charSpace:0.3});
+        font('bold', 11.5); color(INK); doc.text(lines[j], x, y + 5.5);
+      });
+      y += h + 2;
+    }
+  }
+
+  const ordem = c.ordem || [];
+  if(ordem.length){
+    section('Ordem do evento');
+    const cH = 22, cR = 52, cI = CW - cH - cR;
+    font('bold', 7.5); color(MUTED);
+    doc.text('HORÁRIO', M + 2, y); doc.text('MOMENTO', M + cH, y); doc.text('RESPONSÁVEL', M + cH + cI, y); y += 3;
+    ordem.forEach((o, i) => {
+      font('bold', 11); const il = doc.splitTextToSize(o.item || '', cI - 4);
+      font('normal', 10); const rl = doc.splitTextToSize(o.responsavel || '', cR - 2);
+      const h = Math.max(il.length, rl.length, 1) * 5 + 4;
+      ensure(h);
+      if(i % 2 === 0){ doc.setFillColor(ZEBRA[0], ZEBRA[1], ZEBRA[2]); doc.rect(M, y, CW, h, 'F'); }
+      const ty = y + 5.6;
+      font('bold', 10.5); color(ACC); doc.text(o.hora || '—', M + 2, ty);
+      font('bold', 11); color(INK); doc.text(il, M + cH, ty);
+      font('normal', 10); color(MUTED); doc.text(rl, M + cH + cI, ty);
+      y += h;
+    });
+  }
+
+  const ms = c.musicas || [];
+  if(ms.length){
+    section('Músicas');
+    ms.forEach((m, i) => {
+      font('bold', 11); const tl2 = doc.splitTextToSize(m.titulo, CW - 40);
+      const h = tl2.length * 5 + (m.artista ? 5 : 0) + 4;
+      ensure(h);
+      font('bold', 10); color(MUTED); doc.text(String(i + 1).padStart(2, '0'), M, y + 4.5);
+      font('bold', 11); color(INK); doc.text(tl2, M + 10, y + 4.5);
+      if(m.artista){ font('normal', 9.5); color(MUTED); doc.text(m.artista, M + 10, y + 4.5 + tl2.length * 5); }
+      if(m.tom){
+        doc.setFillColor(SUN[0], SUN[1], SUN[2]); doc.roundedRect(PW - M - 22, y + 0.5, 22, 6.5, 1.5, 1.5, 'F');
+        font('bold', 9); doc.setTextColor(43,34,0); doc.text('Tom ' + m.tom, PW - M - 11, y + 5, {align:'center'});
+      }
+      y += h;
+      doc.setDrawColor(LINE[0], LINE[1], LINE[2]); doc.setLineWidth(0.2); doc.line(M + 10, y - 1.5, PW - M, y - 1.5);
+    });
+  }
+
+  const esc2 = c.data ? escalasFor(itemOfCulto(c)) : [];
+  if(esc2.length){
+    section('Equipes');
+    esc2.forEach(e => {
+      font('normal', 10.5); const pl = doc.splitTextToSize([e.responsavel && 'Responsável: ' + e.responsavel, e.obs && '(' + e.obs + ')'].filter(Boolean).join(' · ') || '-', CW - 48);
+      font('bold', 10); const nl = doc.splitTextToSize(e.area || '', 44);
+      const h = Math.max(pl.length, nl.length) * 5 + 3;
+      ensure(h);
+      font('bold', 10); color(INK); doc.text(nl, M, y + 4);
+      font('normal', 10.5); color(INK); doc.text(pl, M + 48, y + 4);
+      y += h;
+    });
+  }
+
+  if(c.obs){
+    section('Observações');
+    font('normal', 10.5); color(INK);
+    doc.splitTextToSize(c.obs, CW).forEach(l => { ensure(5.5); doc.text(l, M, y); y += 5.2; });
+  }
+
+  const n = doc.getNumberOfPages(), now = new Date();
+  for(let p = 1; p <= n; p++){
+    doc.setPage(p);
+    doc.setDrawColor(LINE[0], LINE[1], LINE[2]); doc.setLineWidth(0.2); doc.line(M, PH - 12, PW - M, PH - 12);
+    font('normal', 8); color(MUTED);
+    doc.text(`Painel Youth · gerado em ${pad(now.getDate())}/${pad(now.getMonth() + 1)}/${now.getFullYear()}`, M, PH - 7);
+    doc.text(`Página ${p} de ${n}`, PW - M, PH - 7, {align:'right'});
+  }
+  return doc;
+}
+
+async function cultoPdf(c){
+  if(!window.jspdf){ toast('O gerador de PDF não carregou. Recarregue a página.'); return; }
+  let blob;
+  try { blob = buildCultoPdf(c).output('blob'); }
+  catch(e){ toast('Não foi possível montar o PDF.'); return; }
+  const nome = ('Ordem do evento ' + (c.data ? c.data.split('-').reverse().join('-') : 'sem data') + (c.tema ? ' - ' + c.tema : '')).replace(/[\\/:*?"<>|]/g, '').slice(0, 120) + '.pdf';
+  await saveFile(nome, blob);
+}
+
+document.addEventListener('click', async ev => {
+  if(!ev.target.closest('.bellwrap')) $('#bellpop').hidden = true;
+  if(!ev.target.closest('#mlist, #obs-text') && $('#mlist')) $('#mlist').hidden = true;
+  const b = ev.target.closest('[data-act]'); if(!b) return;
+  const act = b.dataset.act;
+  if(act === 'tab'){ tab = b.dataset.tab; try{ localStorage.setItem('youth-tab', tab); }catch(e){} render(); window.scrollTo(0,0); }
+  else if(act === 'seg'){ seg[b.dataset.key] = b.dataset.val; render(); }
+  else if(act === 'new'){ const d = {}; if(b.dataset.date) d.data = b.dataset.date; if(b.dataset.ref) d.ref = b.dataset.ref;
+    else if(b.dataset.col === 'escalas'){ const p = byDate(state.cultos.filter(c => c.data >= todayStr()))[0]; if(p){ const it = itemOfCulto(p); d.data = p.data; d.ref = it.kind + ':' + it.id; } }
+    openForm(b.dataset.col, null, d); }
+  else if(act === 'open'){ openDetail(b.dataset.kind, b.dataset.id, b.dataset.tab); }
+  else if(act === 'bell'){ const p = $('#bellpop'); p.hidden = !p.hidden; renderBell(); }
+  else if(act === 'notif'){ $('#bellpop').hidden = true; openDetail(b.dataset.kind, b.dataset.id, 'obs'); }
+  else if(act === 'pick'){ pickMention(b.dataset.name); }
+  else if(act === 'backup-json' || act === 'backup-csv'){ b.disabled = true; await downloadBackup(act === 'backup-csv'); b.disabled = false; }
+  else if(act === 'logout'){ if(sb) await sb.auth.signOut(); location.reload(); }
+  else if(act === 'topen'){ openTask(b.dataset.id); }
+  else if(act === 'tcheck'){ b.disabled = true; await toggleTask(b.dataset.id); }
+  else if(act === 'tdcheck'){ const s = $('#t-status'); s.value = s.value === 'feito' ? 'afazer' : 'feito'; b.classList.toggle('on', s.value === 'feito'); }
+  else if(act === 'titem-rm'){ b.closest('.titem').remove(); updateProg(); }
+  else if(act === 'tdel'){
+    if(!b.dataset.armed){ b.dataset.armed = '1'; b.textContent = 'Clique de novo para excluir'; setTimeout(() => { if(b.isConnected){ delete b.dataset.armed; b.textContent = 'Excluir'; } }, 4000); return; }
+    if(await removeRec('tarefas', taskCtx.id)){ toast('Tarefa excluída'); $('#dlg').close(); }
+  }
+  else if(act === 'dp-toggle'){
+    const dp = b.closest('.dp'), pop = dp.querySelector('.dp-pop'), open = pop.hidden;
+    document.querySelectorAll('.dp-pop').forEach(p => { p.hidden = true; p.closest('.dp').querySelector('.dp-btn').setAttribute('aria-expanded', 'false'); });
+    if(open){ const v = dp.querySelector('input').value || todayStr(); dp.dataset.ym = v.slice(0, 7); renderCal(dp); pop.hidden = false; b.setAttribute('aria-expanded', 'true'); }
+  }
+  else if(act === 'dp-nav'){
+    const dp = b.closest('.dp'); let [y, m] = dp.dataset.ym.split('-').map(Number);
+    m += +b.dataset.dir; if(m < 1){ m = 12; y--; } if(m > 12){ m = 1; y++; }
+    dp.dataset.ym = `${y}-${pad(m)}`; renderCal(dp);
+  }
+  else if(act === 'dp-pick'){
+    const dp = b.closest('.dp'), v = b.dataset.date, lab = dp.querySelector('.dp-label');
+    dp.querySelector('input').value = v; lab.textContent = dpLabel(v); lab.classList.toggle('muted', !v);
+    dp.querySelector('.dp-pop').hidden = true; dp.querySelector('.dp-btn').setAttribute('aria-expanded', 'false'); dp.querySelector('.dp-btn').focus();
+  }
+  else if(act === 'qopen'){ detailCtx.editOpen = true; renderDetail(); const f = $('#qedit input'); if(f) f.focus(); }
+  else if(act === 'qcancel'){ detailCtx.editOpen = false; renderDetail(); }
+  else if(act === 'qdel'){
+    if(!b.dataset.armed){ b.dataset.armed = '1'; b.textContent = 'Clique de novo para excluir'; setTimeout(() => { if(b.isConnected){ delete b.dataset.armed; b.textContent = 'Excluir evento'; } }, 4000); return; }
+    if(await removeRec(detailCtx.kind, detailCtx.id)){ toast('Evento excluído'); $('#dlg').close(); }
+  }
+  else if(act === 'dtab'){ detailCtx.tab = b.dataset.tab; detailCtx.obsDirty = false; renderDetail(); }
+  else if(act === 'mkculto'){ const it = findItem(detailCtx.kind, detailCtx.id); if(it) openForm('cultos', null, {data: it.data, hora: it.hora, eventoId: it.id}); }
+  else if(act === 'edit'){ const r = state[b.dataset.col].find(x => x.id === b.dataset.id); if(r) openForm(b.dataset.col, r); }
+  else if(act === 'dup'){ const r = state.cultos.find(x => x.id === b.dataset.id); if(r){ const c = JSON.parse(JSON.stringify(r)); delete c.id; delete c.criadoEm; delete c.eventoId; c.data = ''; openForm('cultos', null, c); } }
+  else if(act === 'move'){ const r = state.tarefas.find(x => x.id === b.dataset.id); if(r){ b.disabled = true; await save('tarefas', {...r, status: b.dataset.to}); } }
+  else if(act === 'close'){ if(dlgMode === 'form' && editing && editing.back) openDetail(editing.back.kind, editing.back.id, editing.back.tab); else $('#dlg').close(); }
+  else if(act === 'step'){ setStep(+b.dataset.step); }
+  else if(act === 'prev'){ setStep(step - 1); }
+  else if(act === 'next'){ setStep(step + 1); }
+  else if(act === 'pdf'){ const r = state.cultos.find(x => x.id === b.dataset.id); if(r) cultoPdf(r); }
+  else if(act === 'addrow'){ const box = $(`#rep-${b.dataset.rep} .rows`); box.querySelector('.hint')?.remove(); box.insertAdjacentHTML('beforeend', b.dataset.rep === 'musicas' ? songRow() : ordRow()); box.lastElementChild.querySelector('input').focus(); }
+  else if(act === 'rmrow'){ b.closest('.rrow').remove(); }
+  else if(act === 'padrao'){ const box = $('#rep-ordem .rows'); const dir = $('#f-dirigente')?.value || '', pre = $('#f-preletor')?.value || '', lv = $('#f-louvor')?.value || '';
+    box.innerHTML = ORDEM_PADRAO.map(([h,i,who]) => ordRow({hora:h, item:i, responsavel: {dir, lv, pre}[who] || ''})).join(''); }
+  else if(act === 'delete'){
+    if(!b.dataset.armed){ b.dataset.armed = '1'; b.textContent = 'Clique de novo para excluir'; setTimeout(() => { if(b.isConnected){ delete b.dataset.armed; b.textContent = 'Excluir'; } }, 4000); return; }
+    const {col, id, back} = editing;
+    if(await removeRec(col, id)){
+      toast('Excluído');
+      if(back && !(back.kind === col && back.id === id)) openDetail(back.kind, back.id, back.tab); else $('#dlg').close();
+    }
+  }
+});
+$('#dlg').addEventListener('click', ev => { if(ev.target.id === 'dlg') ev.target.close(); });
+$('#dlg').addEventListener('close', () => { dlgMode = null; editing = null; });
+
+init();
+</script>
+
+<script>if ('serviceWorker' in navigator) window.addEventListener('load', () => navigator.serviceWorker.register('sw.js').catch(() => {}));</script>
+</body>
+</html>
