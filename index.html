@@ -748,11 +748,21 @@ async function initSupabase(){
   if(data && data.session) return startSupabase(data.session.user);
   $('#login').hidden = false; setTimeout(() => { const f = $('#lg-email'); if(f) f.focus(); }, 0);
 }
+/* Team roster from public.membros (email, nome, papel). Before 6-nomes-da-equipe.sql a member only sees
+   their own row and there is no "nome" column, so both shapes are handled. */
+let equipe = [];
+async function loadEquipe(){
+  let r = await sb.from('membros').select('email,nome,papel');
+  if(r.error) r = await sb.from('membros').select('email,papel');
+  equipe = (r.data || []).map(m => ({email: m.email, nome: m.nome || '', papel: m.papel}));
+  const me = equipe.find(m => lower(m.email) === lower(sbUser && sbUser.email));
+  isAdmin = !!(me && me.papel === 'admin');
+}
+const memberName = m => m.nome || m.email.split('@')[0].replace(/^./, ch => ch.toUpperCase());
 async function startSupabase(user){
   sbUser = user; $('#login').hidden = true;
   mode = 'live'; canWrite = true; render();
-  const me = await sb.from('membros').select('papel').maybeSingle();
-  isAdmin = !!(me.data && me.data.papel === 'admin');
+  await loadEquipe();
   const {data, error} = await sb.from('registros').select('colecao,id,dados').limit(10000);
   if(error){ toast('Sem acesso aos dados: ' + error.message); canWrite = false; COLS.forEach(c => loaded[c] = true); render(); return; }
   COLS.forEach(c => { state[c] = []; loaded[c] = true; });
@@ -1315,7 +1325,10 @@ document.addEventListener('change', ev => { if(ev.target.id === 'upl-input'){ co
    The list re-renders on its own; the composer stays put so typing is never lost. */
 let chatMsgs = [], chatLoaded = false, chatErr = '';
 const lower = s => String(s || '').toLowerCase();
-const myName = () => getMe() || (sbUser && sbUser.email ? sbUser.email.split('@')[0].replace(/^./, ch => ch.toUpperCase()) : 'Eu');
+const myName = () => {
+  const me = sbUser && equipe.find(m => lower(m.email) === lower(sbUser.email));
+  return (me && me.nome) || getMe() || (sbUser && sbUser.email ? sbUser.email.split('@')[0].replace(/^./, ch => ch.toUpperCase()) : 'Eu');
+};
 const localDay = d => d.getFullYear() + '-' + pad(d.getMonth() + 1) + '-' + pad(d.getDate());
 function chatTime(iso, withDay){
   const d = new Date(iso), hm = pad(d.getHours()) + ':' + pad(d.getMinutes());
@@ -1762,6 +1775,7 @@ function knownPeople(){
   state.cultos.forEach(c => { add(c.dirigente); add(c.preletor); add(c.louvor); (c.ordem || []).forEach(o => add(o.responsavel)); (c.marcados || []).forEach(add); });
   state.escalas.forEach(e => add(e.responsavel));
   state.tarefas.forEach(t => add(t.responsavel));
+  (typeof equipe !== 'undefined' ? equipe : []).forEach(x => add(memberName(x)));
   return [...m.values()].sort((a, b) => a.localeCompare(b, 'pt'));
 }
 function computeMentions(text){
@@ -1784,7 +1798,7 @@ function mentionQuery(ta){ const m = ta.value.slice(0, ta.selectionStart).match(
 let mentionTa = null;
 const mentionBox = ta => ta && ta.id === 'chat-text' ? $('#chat-mlist') : $('#mlist');
 const mentionPeople = ta => ta && ta.id === 'chat-text'
-  ? [...new Set([...knownPeople(), ...chatMsgs.map(m => m.autor_nome).filter(Boolean)])].filter(n => norm(n) !== norm(myName())).sort((a, b) => a.localeCompare(b, 'pt'))
+  ? [...new Set([...equipe.map(memberName), ...knownPeople(), ...chatMsgs.map(m => m.autor_nome).filter(Boolean)])].filter(n => norm(n) !== norm(myName())).sort((a, b) => a.localeCompare(b, 'pt'))
   : knownPeople();
 function renderMentionList(ta){
   mentionTa = ta;
@@ -2066,9 +2080,17 @@ document.addEventListener('click', async ev => {
     $('#chat-name-in').focus();
   }
   else if(act === 'chat-name-ok'){
-    const v = ($('#chat-name-in').value || '').trim(); if(v) setMe(v);
-    b.closest('.chat-as').innerHTML = `Você aparece como <b id="chat-me">${esc(myName())}</b> · <button type="button" class="linkbtn" data-act="chat-name">trocar nome</button>`;
-    renderBell(); toast('Nome salvo neste aparelho');
+    const v = ($('#chat-name-in').value || '').trim(); const box = b.closest('.chat-as');
+    if(v){
+      setMe(v);
+      // Save it for the whole team, so others can find this person in the @ list.
+      const {error} = await sb.rpc('definir_meu_nome', {novo: v});
+      const me = equipe.find(m => lower(m.email) === lower(sbUser.email));
+      if(!error && me) me.nome = v;
+      toast(error ? 'Nome salvo neste aparelho (falta rodar o 6-nomes-da-equipe.sql para a equipe ver)' : 'Nome salvo para a equipe');
+    }
+    box.innerHTML = `Você aparece como <b id="chat-me">${esc(myName())}</b> · <button type="button" class="linkbtn" data-act="chat-name">trocar nome</button>`;
+    renderBell();
   }
   else if(act === 'mdel'){
     if(!b.dataset.armed){ b.dataset.armed = '1'; b.textContent = 'confirmar?'; setTimeout(() => { if(b.isConnected){ delete b.dataset.armed; b.textContent = 'apagar'; } }, 4000); return; }
