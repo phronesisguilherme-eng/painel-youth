@@ -765,6 +765,18 @@ async function startSupabase(user){
   }).subscribe();
 }
 document.addEventListener('submit', async ev => {
+  if(ev.target.id !== 'passform') return;
+  ev.preventDefault();
+  const f = ev.target, msg = $('#pw-msg'), a = f.elements.pw1.value, b = f.elements.pw2.value;
+  if(a.length < 6){ msg.textContent = 'A senha precisa ter pelo menos 6 caracteres.'; return; }
+  if(a !== b){ msg.textContent = 'As duas senhas não são iguais.'; return; }
+  const btn = f.querySelector('[type=submit]'); btn.disabled = true; btn.textContent = 'Salvando…';
+  const {error} = await sb.auth.updateUser({password: a});
+  btn.disabled = false; btn.textContent = 'Salvar nova senha';
+  if(error){ msg.textContent = /different|same/i.test(error.message) ? 'A nova senha precisa ser diferente da atual.' : /weak|short/i.test(error.message) ? 'Senha fraca: use pelo menos 6 caracteres, misturando letras e números.' : 'Não foi possível trocar: ' + error.message; return; }
+  $('#dlg').close(); toast('Senha trocada. Use a nova senha no próximo login.');
+});
+document.addEventListener('submit', async ev => {
   if(ev.target.id !== 'loginform') return;
   ev.preventDefault();
   const f = ev.target, msg = $('#lg-msg'), btn = f.querySelector('[type=submit]');
@@ -818,7 +830,7 @@ function render(){
   const st = $('#status');
   if(mode === 'loading') st.innerHTML = '<span class="dot"></span> <span class="st-txt">Conectando…</span>';
   else if(mode === 'local') st.innerHTML = '<span class="dot"></span> <span class="st-txt">Modo de teste</span>';
-  else if(sb) st.innerHTML = `<span class="dot live"></span> <span class="st-txt">${esc(sbUser && sbUser.email || 'Conectado')}</span> <button type="button" class="btn ghost" data-act="logout" style="padding:2px 6px;font-size:12px">Sair</button>`;
+  else if(sb) st.innerHTML = `<span class="dot live"></span> <span class="st-txt">${esc(sbUser && sbUser.email || 'Conectado')}</span> <button type="button" class="btn ghost" data-act="senha" style="padding:2px 6px;font-size:12px">Senha</button> <button type="button" class="btn ghost" data-act="logout" style="padding:2px 6px;font-size:12px">Sair</button>`;
   else st.innerHTML = `<span class="dot live"></span> <span class="st-txt">${canWrite ? 'Sincronizado com a equipe' : 'Somente leitura'}</span>`;
 
   const bn = $('#banner');
@@ -1997,6 +2009,20 @@ document.addEventListener('click', async ev => {
   else if(act === 'notif'){ $('#bellpop').hidden = true; openDetail(b.dataset.kind, b.dataset.id, 'obs'); }
   else if(act === 'pick'){ pickMention(b.dataset.name); }
   else if(act === 'backup-json' || act === 'backup-csv'){ b.disabled = true; await downloadBackup(act === 'backup-csv'); b.disabled = false; }
+  else if(act === 'senha'){
+    dlgMode = 'pass'; editing = null;
+    $('#dlg').innerHTML = `<form id="passform" novalidate>
+      <div class="dh"><h2>Trocar minha senha</h2><button type="button" class="x" data-act="close" aria-label="Fechar">×</button></div>
+      <div class="db">
+        <p class="hint-step">Conta: <b>${esc(sbUser && sbUser.email || '')}</b>. A senha precisa ter pelo menos 6 caracteres.</p>
+        <div class="fld full"><label for="pw1">Nova senha</label><input id="pw1" name="pw1" type="password" autocomplete="new-password" minlength="6" required></div>
+        <div class="fld full"><label for="pw2">Repita a nova senha</label><input id="pw2" name="pw2" type="password" autocomplete="new-password" minlength="6" required></div>
+        <p class="muted full" id="pw-msg" role="alert" style="margin:0;min-height:1.4em"></p>
+      </div>
+      <div class="df"><span></span><span class="row"><button type="button" class="btn" data-act="close">Cancelar</button><button type="submit" class="btn primary">Salvar nova senha</button></span></div>
+    </form>`;
+    $('#dlg').showModal(); setTimeout(() => $('#pw1').focus(), 0);
+  }
   else if(act === 'logout'){ if(sb) await sb.auth.signOut(); location.reload(); }
   else if(act === 'notif-chat'){ $('#bellpop').hidden = true; openChat(); }
   else if(act === 'chat-open'){ openChat(); }
