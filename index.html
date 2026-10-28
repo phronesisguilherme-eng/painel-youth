@@ -304,6 +304,42 @@ dialog{border-radius:20px;border:3px solid var(--ink);box-shadow:8px 8px 0 var(-
 .todo .tbody .row{gap:5px}
 .todo .chip{white-space:normal;max-width:100%}
 
+/* Cronograma (event window) */
+.cr-info{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px 18px;margin:0;background:var(--card);border-radius:14px;padding:14px 16px}
+.cr-info div{min-width:0}
+.cr-info dt{font-family:var(--f-mono);font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:var(--muted)}
+.cr-info dd{margin:2px 0 0;font-weight:600;overflow-wrap:anywhere;line-height:1.3}
+.cr-sect{display:flex;justify-content:space-between;align-items:baseline;gap:10px;margin:22px 0 8px;padding-bottom:6px;border-bottom:2.5px solid var(--ink)}
+.cr-sect h3{font-family:var(--f-display);font-weight:400;text-transform:uppercase;font-size:20px;letter-spacing:.03em;color:var(--accent)}
+.cr-list,.cr-songs{list-style:none;margin:0;padding:0;display:grid}
+.cr-row{display:grid;grid-template-columns:70px minmax(0,1fr) minmax(0,.8fr);gap:12px;align-items:start;padding:11px 12px;border-radius:10px}
+.cr-row:nth-child(odd){background:var(--card)}
+.cr-time{display:grid;gap:1px;font-family:var(--f-mono)}
+.cr-time b{color:var(--accent);font-size:15px}
+.cr-time small{color:var(--muted);font-size:11px}
+.cr-what{display:flex;flex-wrap:wrap;align-items:center;gap:6px 8px;min-width:0}
+.cr-what b{font-size:15px;line-height:1.3;overflow-wrap:anywhere}
+.cr-dur{font-family:var(--f-mono);font-size:11px;font-weight:700;background:var(--ink);color:var(--bg);border-radius:999px;padding:1px 8px;white-space:nowrap}
+.cr-who{color:var(--muted);font-size:14px;text-align:right;overflow-wrap:anywhere}
+.cr-songs li{display:flex;align-items:center;gap:12px;padding:9px 4px;border-bottom:1px solid var(--line)}
+.cr-songs li:last-child{border-bottom:0}
+.cr-n{font-family:var(--f-mono);font-weight:700;color:var(--accent);width:22px;flex:none}
+.cr-song{flex:1;min-width:0;display:grid}
+.cr-song b{overflow-wrap:anywhere}
+.cr-song small{color:var(--muted);font-size:13px}
+@media (max-width:640px){
+  .cr-info{grid-template-columns:1fr 1fr;padding:12px 14px;gap:10px 14px}
+  .cr-row{grid-template-columns:56px minmax(0,1fr);gap:3px 10px;padding:10px}
+  .cr-time{grid-row:span 2;white-space:nowrap}
+  .cr-time b{font-size:14px}
+  .cr-who{grid-column:2;text-align:left;font-size:13px}
+  .cr-who:empty{display:none}
+  .cr-what b{font-size:14px}
+  .editbar:not(.open) > span{display:none}
+  .editbar:not(.open){padding:8px 16px;justify-content:flex-end}
+  .editbar:not(.open) .btn{padding:5px 12px;font-size:13px}
+}
+
 /* Arquivos */
 .folders{display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:14px}
 .folder{display:grid;gap:6px;justify-items:start;text-align:left;background:var(--card);border:2px solid transparent;border-radius:18px;padding:18px;cursor:pointer;color:var(--ink)}
@@ -616,7 +652,8 @@ function toast(msg){ const t = $('#toast'); t.textContent = msg; t.hidden = fals
    Two backends: the claude.ai artifact store (when opened as an Artifact) and Supabase (the
    standalone webapp, which loads config.js with window.YOUTH_CONFIG and supabase-js before this script). */
 const CFG = window.YOUTH_CONFIG || null;
-let sb = null, sbUser = null;
+let sb = null, sbUser = null, isAdmin = false; // isAdmin: only the admin uploads or deletes files
+const A = html => (canWrite && isAdmin) ? html : '';
 async function init(){
   render();
   if(CFG && CFG.supabaseUrl) return initSupabase();
@@ -650,6 +687,8 @@ async function initSupabase(){
 async function startSupabase(user){
   sbUser = user; $('#login').hidden = true;
   mode = 'live'; canWrite = true; render();
+  const me = await sb.from('membros').select('papel').maybeSingle();
+  isAdmin = !!(me.data && me.data.papel === 'admin');
   const {data, error} = await sb.from('registros').select('colecao,id,dados').limit(10000);
   if(error){ toast('Sem acesso aos dados: ' + error.message); canWrite = false; COLS.forEach(c => loaded[c] = true); render(); return; }
   COLS.forEach(c => { state[c] = []; loaded[c] = true; });
@@ -810,7 +849,32 @@ function repertorioHtml(){
 
 /* ---------- Compromisso (detail) ---------- */
 let dlgMode = null, detailCtx = null;
-const DTABS = [['resp','Informações'],['escalas','Equipes'],['ordem','Ordem do evento'],['obs','Observações']];
+const DTABS = [['resp','Informações'],['ordem','Cronograma'],['obs','Observações']];
+
+/* Cronograma on screen, laid out like the PDF: info block, then a timed table, then songs. */
+const minutes = h => { const [a, b] = String(h || '').split(':').map(Number); return isNaN(a) ? null : a * 60 + (b || 0); };
+const hhmm = m => pad(Math.floor(m / 60) % 24) + ':' + pad(m % 60);
+function cronogramaHtml(c){
+  const od = c.ordem || [], ms = c.musicas || [];
+  const info = [['Tema', c.tema], ['Preletor', c.preletor], ['Dirigente', c.dirigente], ['Ministro de louvor', c.louvor], ['Texto bíblico', c.textos], ['Série', c.serie]].filter(m => m[1]);
+  const rows = od.map((o, i) => {
+    const m = String(o.item || '').match(/^(.*?)\s*\((\d+)\s*min\)\s*$/i);
+    const nome = m ? m[1] : o.item, dur = m ? +m[2] : null, ini = minutes(o.hora);
+    const fim = ini != null && dur ? ini + dur : (od[i + 1] && minutes(od[i + 1].hora));
+    return `<li class="cr-row">
+      <span class="cr-time"><b>${esc(o.hora || '—')}</b>${fim != null && ini != null && fim > ini ? `<small>→ ${hhmm(fim)}</small>` : ''}</span>
+      <span class="cr-what"><b>${esc(nome || '')}</b>${dur ? `<span class="cr-dur">${dur} min</span>` : ''}</span>
+      <span class="cr-who">${esc(o.responsavel || '')}</span>
+    </li>`;
+  }).join('');
+  const total = od.length && minutes(od[0].hora) != null ? (() => { const last = od[od.length - 1], lm = String(last.item).match(/\((\d+)\s*min\)/i), end = minutes(last.hora) + (lm ? +lm[1] : 0); return `${od[0].hora} às ${hhmm(end)}`; })() : '';
+  return `${info.length ? `<dl class="cr-info">${info.map(([k, v]) => `<div><dt>${k}</dt><dd>${esc(v)}</dd></div>`).join('')}</dl>` : ''}
+    <div class="cr-sect"><h3>Cronograma</h3>${total ? `<span class="mono muted">${esc(total)}</span>` : ''}</div>
+    ${od.length ? `<ol class="cr-list">${rows}</ol>` : '<p class="muted" style="margin:0">Nenhum momento cadastrado ainda.</p>'}
+    ${ms.length ? `<div class="cr-sect"><h3>Músicas</h3><span class="mono muted">${ms.length}</span></div>
+      <ol class="cr-songs">${ms.map((s, i) => `<li><span class="cr-n">${pad(i + 1)}</span><span class="cr-song"><b>${esc(s.titulo)}</b>${s.artista ? `<small>${esc(s.artista)}</small>` : ''}</span>${s.tom ? `<span class="chip key">Tom ${esc(s.tom)}</span>` : ''}</li>`).join('')}</ol>` : ''}
+    ${c.obs ? `<div class="cr-sect"><h3>Observações</h3></div><p style="margin:0;white-space:pre-wrap">${esc(c.obs)}</p>` : ''}`;
+}
 function openDetail(kind, id, dtab){
   detailCtx = {kind, id, tab: dtab || (detailCtx && detailCtx.id === id ? detailCtx.tab : 'resp')};
   dlgMode = 'detail'; editing = null;
@@ -826,17 +890,9 @@ function renderDetail(){
   let body = '';
   if(tb === 'ordem'){
     if(c){
-      const ms = c.musicas || [], od = c.ordem || [];
-      const metas = [['Tema', c.tema],['Preletor', c.preletor],['Dirigente', c.dirigente],['Ministro de louvor', c.louvor],['Texto bíblico', c.textos],['Série', c.serie]].filter(m => m[1]);
-      body = `${metas.length ? `<dl class="meta" style="margin-top:0">${metas.map(([k,v]) => `<div><dt>${k}</dt><dd>${esc(v)}</dd></div>`).join('')}</dl>` : ''}
-        <div class="sect-h" style="margin-top:18px"><h3>Ordem do evento</h3></div>
-        ${od.length ? `<ol class="order" style="margin-top:0">${od.map(o => `<li><span class="mono muted">${esc(o.hora || '—')}</span><span>${esc(o.item)}</span><span class="muted">${esc(o.responsavel || '')}</span></li>`).join('')}</ol>` : '<p class="muted" style="margin:0">Nenhum momento cadastrado ainda.</p>'}
-        <div class="sect-h" style="margin-top:18px"><h3>Músicas</h3></div>
-        ${ms.length ? `<ul class="songs" style="margin-top:0">${ms.map((m,i) => `<li><span class="n">${i+1}</span><b>${esc(m.titulo)}</b>${m.artista ? `<span class="muted">${esc(m.artista)}</span>` : ''}${m.tom ? `<span class="chip key">Tom ${esc(m.tom)}</span>` : ''}</li>`).join('')}</ul>` : '<p class="muted" style="margin:0">Nenhuma música registrada.</p>'}
-        ${c.obs ? `<p class="muted" style="margin:14px 0 0;white-space:pre-wrap">${esc(c.obs)}</p>` : ''}
-        <div class="row" style="margin-top:18px">${W(`<button class="btn primary" data-act="edit" data-col="cultos" data-id="${esc(c.id)}">Editar ordem do evento</button>`)}<button class="btn" data-act="pdf" data-id="${esc(c.id)}">Baixar PDF</button></div>`;
+      body = cronogramaHtml(c) + `<div class="row" style="margin-top:20px">${W(`<button class="btn primary" data-act="edit" data-col="cultos" data-id="${esc(c.id)}">Editar cronograma</button>`)}<button class="btn" data-act="pdf" data-id="${esc(c.id)}">Baixar PDF</button></div>`;
     } else {
-      body = `<div class="empty"><strong>Sem ordem do evento</strong><span>Monte a ordem deste compromisso: tema, preletor, dirigente, músicas com tom e o roteiro com horários.</span>${W(`<button class="btn primary" data-act="mkculto">+ Montar ordem do evento</button>`)}</div>`;
+      body = `<div class="empty"><strong>Sem cronograma</strong><span>Monte o cronograma deste evento: tema, preletor, dirigente, músicas com tom e os momentos com horário.</span>${W(`<button class="btn primary" data-act="mkculto">+ Montar cronograma</button>`)}</div>`;
     }
   } else if(tb === 'escalas'){
     body = `<div class="sect-h"><h3>Equipes deste evento</h3>${W(`<button class="btn primary" data-act="new" data-col="escalas" data-date="${esc(it.data)}" data-ref="${esc(ref)}">+ Nova equipe</button>`)}</div>
@@ -1115,7 +1171,7 @@ function arquivosView(){
   const [k, nome, cor] = PASTAS.find(p => p[0] === pastaAberta) || PASTAS[3];
   const list = files.filter(f => f.pasta === k).sort((a, b) => String(a.nome).localeCompare(String(b.nome), 'pt'));
   return `<div class="bar"><div class="crumbs"><button type="button" class="btn ghost" data-act="pasta" data-pasta="">‹ Arquivos</button><h2 style="--fc:${cor}"><span class="crumb-dot"></span>${esc(nome)}</h2></div>
-    ${W(`<label class="btn primary upl" for="upl-input">+ Enviar arquivos</label><input type="file" id="upl-input" multiple hidden>`)}</div>
+    ${A(`<label class="btn primary upl" for="upl-input">+ Enviar arquivos</label><input type="file" id="upl-input" multiple hidden>`)}</div>
     ${list.length ? `<div class="files">${list.map(f => {
       const [tag, tc] = fileKind(f.nome);
       return `<div class="file">
@@ -1124,11 +1180,11 @@ function arquivosView(){
         <div class="factions">
           <button type="button" class="btn" data-act="fopen" data-id="${esc(f.id)}">Abrir</button>
           <button type="button" class="btn ghost" data-act="fdown" data-id="${esc(f.id)}">Baixar</button>
-          ${W(`<button type="button" class="btn ghost danger-txt" data-act="fdel" data-id="${esc(f.id)}" aria-label="Excluir ${esc(f.nome)}">Excluir</button>`)}
+          ${A(`<button type="button" class="btn ghost danger-txt" data-act="fdel" data-id="${esc(f.id)}" aria-label="Excluir ${esc(f.nome)}">Excluir</button>`)}
         </div>
       </div>`;
     }).join('')}</div>`
-    : `<div class="empty"><strong>Pasta vazia</strong><span>Envie PDFs, planilhas, documentos ou imagens. Cada arquivo pode ter até 50 MB.</span></div>`}`;
+    : `<div class="empty"><strong>Pasta vazia</strong><span>${isAdmin ? 'Envie PDFs, planilhas, documentos ou imagens. Cada arquivo pode ter até 50 MB.' : 'Nenhum arquivo nesta pasta ainda. Só o administrador do painel envia arquivos.'}</span></div>`}`;
 }
 const safeName = n => String(n).normalize('NFD').replace(/[̀-ͯ]/g, '').replace(/[^A-Za-z0-9._-]+/g, '-').replace(/-+/g, '-').slice(-120);
 async function uploadFiles(fileList){
@@ -1167,8 +1223,7 @@ function homeEventCard(it, first){
     ${it.kind === 'eventos' && c && c.tema ? `<div style="margin-top:2px">Tema: <b>${esc(c.tema)}</b></div>` : ''}
     ${it.local || pessoas.length ? `<div class="muted" style="margin-top:4px">${[it.local && 'Local: ' + esc(it.local), ...pessoas].filter(Boolean).join(' · ')}</div>` : ''}
     <div class="row" style="margin-top:10px">
-      ${c && (c.ordem || []).length ? '<span class="chip ok">Ordem pronta</span>' : '<span class="chip warn">Sem ordem do evento</span>'}
-      ${esq.length ? esq.map(e => `<span class="chip">${esc(e.area)}${e.responsavel ? ' · ' + esc(e.responsavel) : ''}</span>`).join('') : '<span class="chip warn">Sem equipes</span>'}
+      ${c && (c.ordem || []).length ? '<span class="chip ok">Cronograma pronto</span>' : '<span class="chip warn">Sem cronograma</span>'}
     </div>
     <div class="row" style="margin-top:10px">
       <button class="btn" data-act="open" ${key}>Abrir evento</button>
@@ -1215,9 +1270,9 @@ const VIEWS = {
     const fut = seg.agenda === 'proximos';
     const list = byDate(agendaItems().filter(x => x.data && (fut ? x.data >= t : x.data < t)), fut ? 1 : -1);
     if(!list.length) return head + (fut
-      ? empty('Agenda livre', 'Cadastre eventos como cultos especiais, retiros, acampamentos, reuniões e ações evangelísticas. Cada compromisso guarda a própria ordem do evento, as equipes e as informações.', 'eventos', '+ Novo evento')
-      : empty('Nada no histórico', 'Os compromissos que já passaram ficam aqui, com a ordem do evento e as equipes de cada um.'));
-    let out = head + '<p class="muted" style="margin:-6px 0 14px">Toque em um compromisso para ver e editar a ordem do evento, as equipes e as informações.</p>', cur = '';
+      ? empty('Agenda livre', 'Cadastre eventos como cultos especiais, retiros, acampamentos, reuniões e ações evangelísticas. Cada compromisso guarda o próprio cronograma, as informações e as observações.', 'eventos', '+ Novo evento')
+      : empty('Nada no histórico', 'Os compromissos que já passaram ficam aqui, com o cronograma de cada um.'));
+    let out = head + '<p class="muted" style="margin:-6px 0 14px">Toque em um compromisso para ver as informações, o cronograma e as observações.</p>', cur = '';
     list.forEach(it => {
       const d = parseD(it.data), m = MOF[d.getMonth()] + ' ' + d.getFullYear();
       if(m !== cur){ if(cur) out += '</div>'; out += `<div class="month">${m}</div><div class="stack">`; cur = m; }
@@ -1229,13 +1284,11 @@ const VIEWS = {
         ${it.kind === 'eventos' && c && c.tema ? `<div style="margin-top:2px">Tema: <b>${esc(c.tema)}</b></div>` : ''}
         <div class="muted" style="margin-top:4px">${[it.local && 'Local: ' + esc(it.local), it.resp && (it.kind === 'cultos' ? 'Dirigente: ' : 'Responsável: ') + esc(it.resp)].filter(Boolean).join(' · ') || 'Sem responsável definido'}</div>
         <div class="row" style="margin-top:10px">
-          ${c && (c.ordem || []).length ? '<span class="chip ok">Ordem do evento pronta</span>' : '<span class="chip warn">Sem ordem do evento</span>'}
-          ${nEsc ? `<span class="chip ok">${nEsc} equipe${nEsc > 1 ? 's' : ''}</span>` : '<span class="chip warn">Sem equipes</span>'}
+          ${c && (c.ordem || []).length ? '<span class="chip ok">Cronograma pronto</span>' : '<span class="chip warn">Sem cronograma</span>'}
         </div>
         <div class="row" style="margin-top:10px">
           <button class="btn" data-act="open" data-tab="resp" ${key}>Informações</button>
-          <button class="btn" data-act="open" data-tab="escalas" ${key}>Equipes</button>
-          <button class="btn" data-act="open" data-tab="ordem" ${key}>Ordem do evento</button>
+          <button class="btn" data-act="open" data-tab="ordem" ${key}>Cronograma</button>
           <button class="btn" data-act="open" data-tab="obs" ${key}>Observações</button>
           ${c ? `<button class="btn ghost" data-act="pdf" data-id="${esc(c.id)}">Baixar PDF</button>` : ''}
         </div>
@@ -1268,7 +1321,7 @@ const FORMS = {
   escalas: {title:'equipe', head:'equipe', ok:'Equipe salva', fields:[['area','Nome da equipe','combo',1,AREAS],['responsavel','Responsável pela equipe','text'],['data','Data','date',1],['obs','Observação','text',0,null,1]]},
   tarefas: {title:'tarefa', fields:[['titulo','Tarefa','text',1,null,1],['responsavel','Responsável','text'],['prazo','Prazo','date'],['status','Situação','select',0,STATUS.map(s=>s[1])],['prioridade','Prioridade','select',0,PRIOS],['descricao','Detalhes','textarea',0,null,1]]},
   avisos: {title:'aviso', fields:[['titulo','Título','text',1,null,1],['texto','Mensagem','textarea',1,null,1],['autor','Assinado por','text'],['data','Data','date',1],['fixado','Fixar no topo do mural','checkbox']]},
-  cultos: {title:'evento', head:'ordem do evento', fields:[['nome','Nome do evento','text',0,null,1],['tipo','Tipo de evento','select',0,['Evento do Youth', ...TIPOS]],['data','Data','date',1],['hora','Horário','time'],['tema','Tema da mensagem','text',0,null,1],['serie','Série (opcional)','text'],['textos','Texto(s) bíblico(s)','text',0,null,1],['preletor','Preletor','text'],['dirigente','Dirigente','text'],['louvor','Ministro de louvor','text'],['obs','Observações','textarea',0,null,1]]}
+  cultos: {title:'evento', head:'cronograma', novo:'Novo', ok:'Cronograma salvo', fields:[['nome','Nome do evento','text',0,null,1],['tipo','Tipo de evento','select',0,['Evento do Youth', ...TIPOS]],['data','Data','date',1],['hora','Horário','time'],['tema','Tema da mensagem','text',0,null,1],['serie','Série (opcional)','text'],['textos','Texto(s) bíblico(s)','text',0,null,1],['preletor','Preletor','text'],['dirigente','Dirigente','text'],['louvor','Ministro de louvor','text'],['obs','Observações','textarea',0,null,1]]}
 };
 
 /* Date: inline month calendar. Time: hour + minute lists. Both keep the value in a hidden input
@@ -1344,7 +1397,7 @@ function openForm(col, rec, defaults={}){
     const od = base.ordem || [];
     const blocks = {
       '#musicas': `<div class="rep" id="rep-musicas"><div class="rep-h"><b>Músicas</b><button type="button" class="btn ghost" data-act="addrow" data-rep="musicas">+ Música</button></div><div class="rows">${ms.map(songRow).join('')}</div></div>`,
-      '#ordem': `<div class="rep" id="rep-ordem"><div class="rep-h"><b>Momentos do evento</b><span class="row"><button type="button" class="btn ghost" data-act="padrao">Usar ordem padrão</button><button type="button" class="btn ghost" data-act="addrow" data-rep="ordem">+ Momento</button></span></div><div class="rows">${od.map(ordRow).join('') || '<p class="muted hint" style="margin:0;font-size:14px">Adicione os momentos com horário e responsável, ou comece pela ordem padrão.</p>'}</div></div>`,
+      '#ordem': `<div class="rep" id="rep-ordem"><div class="rep-h"><b>Momentos do evento</b><span class="row"><button type="button" class="btn ghost" data-act="padrao">Usar cronograma padrão</button><button type="button" class="btn ghost" data-act="addrow" data-rep="ordem">+ Momento</button></span></div><div class="rows">${od.map(ordRow).join('') || '<p class="muted hint" style="margin:0;font-size:14px">Adicione os momentos com horário e responsável, ou comece pelo cronograma padrão.</p>'}</div></div>`,
       '#resumo': '<div id="resumo"></div>'
     };
     const fmap = Object.fromEntries(f.fields.map(fd => [fd[0], fd]));
@@ -1356,7 +1409,7 @@ function openForm(col, rec, defaults={}){
     actions = `<button type="button" class="btn" data-act="close">Cancelar</button><button type="submit" class="btn primary" id="btn-save">Salvar</button>`;
   }
   dlg.innerHTML = `<form id="frm" novalidate>
-    <div class="dh"><h2>${f.head ? (isNew ? 'Nova ' : 'Editar ') + f.head : (isNew ? 'Novo ' : 'Editar ') + f.title}</h2><button type="button" class="x" data-act="close" aria-label="Fechar">×</button></div>
+    <div class="dh"><h2>${f.head ? (isNew ? (f.novo || 'Nova') + ' ' : 'Editar ') + f.head : (isNew ? 'Novo ' : 'Editar ') + f.title}</h2><button type="button" class="x" data-act="close" aria-label="Fechar">×</button></div>
     ${body}
     <div class="df"><span>${isNew ? '' : `<button type="button" class="btn danger" data-act="delete">Excluir</button>`}</span><span class="row">${actions}</span></div>
   </form>`;
@@ -1369,7 +1422,7 @@ const CULTO_STEPS = [
   ['Dados gerais', ['nome','tipo','data','hora','serie','dirigente'], 'Quando é o evento e quem dirige.'],
   ['Palavra', ['tema','textos','preletor'], 'O tema da mensagem, os textos bíblicos e quem vai pregar.'],
   ['Louvor', ['louvor','#musicas'], 'Quem ministra o louvor e as músicas, com o tom da banda.'],
-  ['Ordem do evento', ['#ordem'], 'O roteiro com o horário e o responsável de cada momento.'],
+  ['Cronograma', ['#ordem'], 'Os momentos do evento com horário e responsável.'],
   ['Revisão', ['obs','#resumo'], 'Confira tudo, acrescente observações e gere o PDF para a equipe.']
 ];
 let step = 0;
@@ -1392,14 +1445,14 @@ function renderResumo(){
   if(!c.preletor) warn.push('Nenhum preletor definido.');
   if(!c.dirigente) warn.push('Nenhum dirigente definido.');
   if(!c.musicas.length) warn.push('Nenhuma música registrada.');
-  if(!c.ordem.length) warn.push('A ordem do evento está vazia.');
+  if(!c.ordem.length) warn.push('O cronograma está vazio.');
   const esq = c.data ? state.escalas.filter(e => e.data === c.data).length : 0;
   $('#resumo').innerHTML = `<div class="eyebrow">${esc(longDate(c.data))}${c.hora ? ' · ' + esc(c.hora) : ''}</div>
     <h3>${esc(c.tema || 'Evento sem tema definido')}</h3>
     <div class="muted">${[c.preletor && 'Preletor: ' + esc(c.preletor), c.dirigente && 'Dirigente: ' + esc(c.dirigente), c.louvor && 'Louvor: ' + esc(c.louvor)].filter(Boolean).join(' · ')}</div>
     <div class="row"><span class="chip">${c.musicas.length} música${c.musicas.length === 1 ? '' : 's'}</span><span class="chip">${c.ordem.length} momento${c.ordem.length === 1 ? '' : 's'}</span><span class="chip">${esq} equipe${esq === 1 ? '' : 's'} nesta data</span></div>
     ${warn.map(w => `<div class="warn">${w}</div>`).join('')}
-    <div class="muted" style="font-size:13px">O PDF traz o cabeçalho do Youth, os dados do evento, a ordem com horários, as músicas com tom, as equipes e as observações.</div>`;
+    <div class="muted" style="font-size:13px">O PDF traz o cabeçalho do Youth, os dados do evento, o cronograma com horários, as músicas com tom e as observações.</div>`;
 }
 
 function collectRows(rep){
