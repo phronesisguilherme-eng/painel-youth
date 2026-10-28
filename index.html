@@ -1797,9 +1797,9 @@ function mentionQuery(ta){ const m = ta.value.slice(0, ta.selectionStart).match(
 // Shared @-picker: event Observações (#obs-text → #mlist) and the team chat (#chat-text → #chat-mlist).
 let mentionTa = null;
 const mentionBox = ta => ta && ta.id === 'chat-text' ? $('#chat-mlist') : $('#mlist');
-const mentionPeople = ta => ta && ta.id === 'chat-text'
-  ? [...new Set([...equipe.map(memberName), ...knownPeople(), ...chatMsgs.map(m => m.autor_nome).filter(Boolean)])].filter(n => norm(n) !== norm(myName())).sort((a, b) => a.localeCompare(b, 'pt'))
-  : knownPeople();
+// Only people with a login (public.membros) can be marked; the painel's other names are not offered.
+const mentionPeople = ta => !sb ? knownPeople()
+  : [...new Set(equipe.filter(m => !sbUser || lower(m.email) !== lower(sbUser.email)).map(memberName))].sort((a, b) => a.localeCompare(b, 'pt'));
 function renderMentionList(ta){
   mentionTa = ta;
   const box = mentionBox(ta); if(!box) return;
@@ -1807,11 +1807,11 @@ function renderMentionList(ta){
   if(q === null){ box.hidden = true; return; }
   const nq = norm(q);
   const opts = mentionPeople(ta).filter(n => !nq || norm(n).startsWith(nq) || norm(n).split(' ').some(w => w.startsWith(nq))).slice(0, 6);
-  if(!opts.length && /\s/.test(q)){ box.hidden = true; return; }
+  if(!opts.length && /\s/.test(q) && q.trim().length > 12){ box.hidden = true; return; }
   const exact = opts.some(n => norm(n) === nq);
   box.innerHTML = opts.map(n => `<button type="button" data-act="pick" data-name="${esc(n)}">@${esc(n)}</button>`).join('')
-    + (q.trim() && !exact ? `<button type="button" data-act="pick" data-name="${esc(q.trim())}">Marcar “${esc(q.trim())}”</button>` : '')
-    || '<span class="muted" style="padding:6px 8px;font-size:13px">Digite o nome de quem você quer marcar.</span>';
+    + (!sb && q.trim() && !exact ? `<button type="button" data-act="pick" data-name="${esc(q.trim())}">Marcar “${esc(q.trim())}”</button>` : '')
+    || `<span class="muted" style="padding:6px 8px;font-size:13px">${sb ? (mentionPeople(ta).length ? 'Nenhum usuário com esse nome. Só quem tem login no app pode ser marcado.' : 'Ainda não há outros usuários cadastrados no app.') : 'Digite o nome de quem você quer marcar.'}</span>`;
   box.hidden = false;
 }
 function pickMention(name){
