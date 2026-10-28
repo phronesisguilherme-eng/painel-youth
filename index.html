@@ -304,6 +304,20 @@ dialog{border-radius:20px;border:3px solid var(--ink);box-shadow:8px 8px 0 var(-
 .todo .tbody .row{gap:5px}
 .todo .chip{white-space:normal;max-width:100%}
 
+/* Online agora */
+#online{display:flex;align-items:center;gap:6px;flex-wrap:wrap;justify-content:flex-end;max-width:420px}
+.on-label{font-family:var(--f-mono);font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:var(--muted)}
+.on-person{display:inline-flex;align-items:center;gap:5px;background:var(--card);border-radius:999px;padding:3px 9px 3px 7px;font-size:12px;font-weight:600;white-space:nowrap;max-width:140px;overflow:hidden;text-overflow:ellipsis}
+.on-dot{width:8px;height:8px;border-radius:50%;background:#1FB866;box-shadow:0 0 0 2px rgba(31,184,102,.25);flex:none}
+.on-extra{color:var(--muted)}
+.on-count-m{display:none}
+@media (max-width:640px){
+  #online{gap:4px;max-width:150px;flex-wrap:nowrap}
+  .on-label,.on-more-m,.on-extra{display:none}
+  .on-count-m{display:inline-flex;color:var(--muted);padding:3px 7px}
+  .on-person{font-size:11px;max-width:90px}
+}
+
 /* Chat */
 #chatfab-wrap{position:fixed;z-index:25;right:max(18px,calc(env(safe-area-inset-right,0px) + 12px));bottom:calc(22px + env(safe-area-inset-bottom,0px))}
 #chatfab{width:64px;height:64px;border:0;background:none;padding:0;cursor:pointer;color:#E8003F;filter:drop-shadow(3px 3px 0 #0B0B0C);transition:transform .15s}
@@ -607,6 +621,7 @@ dialog{border-radius:20px;border:3px solid var(--ink);box-shadow:8px 8px 0 var(-
     <div class="brand">
       <div class="mark"><h1 style="margin:0"><img class="logo" src="youth-logo.png" alt="Youth" width="98" height="42"></h1><span class="tag">Painel da equipe</span><p class="hand">Servindo com excelência, amando a Deus e a nossa geração.</p></div>
       <div class="hright">
+        <div id="online" hidden role="status" data-act="online"></div>
         <div id="status"><span class="dot"></span> Conectando…</div>
         <div class="bellwrap">
           <button type="button" id="bell" class="bellbtn" data-act="bell" aria-label="Marcações" aria-haspopup="true">
@@ -758,11 +773,36 @@ async function loadEquipe(){
   const me = equipe.find(m => lower(m.email) === lower(sbUser && sbUser.email));
   isAdmin = !!(me && me.papel === 'admin');
 }
+/* Who is online right now: Supabase Realtime Presence. Each open app announces only its user id and
+   display name; the header lists everyone else currently connected. Nothing is stored. */
+let presenceCh = null, online = [];
+function startPresence(){
+  if(!sb || !sbUser || presenceCh) return;
+  presenceCh = sb.channel('presenca-youth', {config: {presence: {key: sbUser.id}}});
+  presenceCh.on('presence', {event: 'sync'}, () => {
+    const st = presenceCh.presenceState();
+    online = Object.entries(st).filter(([id]) => id !== sbUser.id)
+      .map(([id, metas]) => ({id, nome: (metas[0] && metas[0].nome) || 'Alguém'}))
+      .sort((a, b) => a.nome.localeCompare(b.nome, 'pt'));
+    renderOnline();
+  }).subscribe(async status => { if(status === 'SUBSCRIBED') await presenceCh.track({nome: myName()}); });
+}
+function retrackPresence(){ if(presenceCh) presenceCh.track({nome: myName()}).catch(() => {}); }
+function renderOnline(){
+  const el = $('#online'); if(!el) return;
+  if(!sb || !online.length){ el.hidden = true; el.innerHTML = ''; return; }
+  const shown = online.slice(0, 4), extra = online.length - shown.length;
+  el.hidden = false;
+  el.title = 'Online agora: ' + online.map(p => p.nome).join(', ');
+  el.innerHTML = `<span class="on-label">Online</span>${shown.map((p, i) => `<span class="on-person${i ? ' on-more-m' : ''}"><i class="on-dot" aria-hidden="true"></i>${esc(p.nome)}</span>`).join('')}${extra > 0 ? `<span class="on-person on-extra">+${extra}</span>` : ''}${online.length > 1 ? `<span class="on-person on-count-m">+${online.length - 1}</span>` : ''}`;
+  el.setAttribute('aria-label', 'Online agora: ' + online.map(p => p.nome).join(', '));
+}
 const memberName = m => m.nome || m.email.split('@')[0].replace(/^./, ch => ch.toUpperCase());
 async function startSupabase(user){
   sbUser = user; $('#login').hidden = true;
   mode = 'live'; canWrite = true; render();
   await loadEquipe();
+  startPresence();
   const {data, error} = await sb.from('registros').select('colecao,id,dados').limit(10000);
   if(error){ toast('Sem acesso aos dados: ' + error.message); canWrite = false; COLS.forEach(c => loaded[c] = true); render(); return; }
   COLS.forEach(c => { state[c] = []; loaded[c] = true; });
@@ -2071,6 +2111,7 @@ document.addEventListener('click', async ev => {
   }
   else if(act === 'notif-chat'){ $('#bellpop').hidden = true; openChat(); }
   else if(act === 'chat-open'){ openChat(); }
+  else if(act === 'online'){ if(online.length) toast('Online agora: ' + online.map(p => p.nome).join(', ')); }
   else if(act === 'chat-close'){ closeChat(); }
   else if(act === 'chat-hide'){ setFabHidden(true); toast('Botão do chat escondido. Para trazer de volta, use "Mostrar chat" no rodapé.'); }
   else if(act === 'chat-show'){ setFabHidden(false); openChat(); }
@@ -2087,6 +2128,7 @@ document.addEventListener('click', async ev => {
       const {error} = await sb.rpc('definir_meu_nome', {novo: v});
       const me = equipe.find(m => lower(m.email) === lower(sbUser.email));
       if(!error && me) me.nome = v;
+      retrackPresence();
       toast(error ? 'Nome salvo neste aparelho (falta rodar o 6-nomes-da-equipe.sql para a equipe ver)' : 'Nome salvo para a equipe');
     }
     box.innerHTML = `Você aparece como <b id="chat-me">${esc(myName())}</b> · <button type="button" class="linkbtn" data-act="chat-name">trocar nome</button>`;
