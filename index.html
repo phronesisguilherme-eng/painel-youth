@@ -304,6 +304,44 @@ dialog{border-radius:20px;border:3px solid var(--ink);box-shadow:8px 8px 0 var(-
 .todo .tbody .row{gap:5px}
 .todo .chip{white-space:normal;max-width:100%}
 
+/* Chat */
+body.on-chat .pfoot{display:none}
+.cbadge{display:inline-grid;place-items:center;min-width:18px;height:18px;padding:0 5px;margin-left:6px;border-radius:999px;background:#FE003E;color:#fff;font:700 11px/1 var(--f-mono);vertical-align:2px}
+#bnav button{position:relative}
+#bnav .cbadge{position:absolute;top:2px;left:calc(50% + 6px);margin:0}
+#chatwrap{display:flex;flex-direction:column;height:calc(100vh - 210px);height:calc(100dvh - 210px);min-height:360px;background:var(--card);border-radius:20px;overflow:hidden}
+.chat-head{display:flex;justify-content:space-between;align-items:baseline;gap:10px;flex-wrap:wrap;padding:14px 18px 10px;border-bottom:1px solid var(--line);background:var(--surface)}
+.chat-head h2{font-family:var(--f-display);font-weight:400;text-transform:uppercase;font-size:26px;letter-spacing:.01em}
+.chat-as{font-size:13px}
+.chat-as input{border:1px solid var(--ink);border-radius:6px;padding:3px 8px;background:var(--bg);width:150px}
+.linkbtn{border:0;background:none;padding:0;color:var(--accent);font-weight:600;cursor:pointer;text-decoration:underline;text-underline-offset:3px;font-size:inherit}
+#chatlist{flex:1;overflow-y:auto;padding:14px 14px 8px;display:flex;flex-direction:column;gap:3px;overscroll-behavior:contain}
+.chat-empty{margin:auto;text-align:center;display:grid;gap:4px;padding:20px}
+.chat-empty strong{font-family:var(--f-display);font-weight:400;text-transform:uppercase;font-size:22px}
+.cday{display:flex;justify-content:center;margin:12px 0 6px}
+.cday span{font-family:var(--f-mono);font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.05em;background:var(--surface);color:var(--muted);border-radius:999px;padding:3px 10px}
+.msg{display:flex}
+.msg.me{justify-content:flex-end}
+.bubble{max-width:min(78%,520px);background:var(--surface);border-radius:16px 16px 16px 4px;padding:8px 12px 6px;display:grid;gap:2px;box-shadow:0 1px 1px rgba(0,0,0,.05)}
+.msg.me .bubble{background:var(--accent);color:#fff;border-radius:16px 16px 4px 16px}
+.bubble .who{font-size:12px;color:var(--violet)}
+.bubble p{margin:0;white-space:pre-wrap;overflow-wrap:anywhere;line-height:1.4}
+.msg.me .mention{color:#fff;text-decoration:underline;font-weight:700}
+.mtime{justify-self:end;font-family:var(--f-mono);font-size:10px;opacity:.7}
+.mdel{border:0;background:none;color:inherit;font:inherit;padding:0 0 0 4px;cursor:pointer;text-decoration:underline;opacity:.85}
+.chat-compose{display:flex;gap:8px;align-items:flex-end;padding:10px 12px;border-top:1px solid var(--line);background:var(--surface)}
+.chat-compose textarea{flex:1;min-width:0;resize:none;border:2px solid var(--ink);border-radius:20px;padding:9px 14px;background:var(--bg);font:inherit;line-height:1.35;max-height:140px}
+.chat-compose textarea:focus{outline:none;border-color:var(--accent)}
+.chat-send{flex:none;width:42px;height:42px;border-radius:50%;border:0;background:var(--accent);color:#fff;display:grid;place-items:center;cursor:pointer}
+.chat-send:hover{background:var(--ink)}
+@media (max-width:640px){
+  body.on-chat main{padding-block:8px calc(70px + env(safe-area-inset-bottom,0px))}
+  #chatwrap{height:calc(100vh - 150px - env(safe-area-inset-bottom,0px));height:calc(100dvh - 150px - env(safe-area-inset-bottom,0px));border-radius:14px;min-height:300px}
+  .chat-head{padding:10px 14px 8px}
+  .chat-head h2{font-size:20px}
+  .bubble{max-width:84%}
+}
+
 /* Cronograma (event window) */
 .cr-info{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px 18px;margin:0;background:var(--card);border-radius:14px;padding:14px 16px}
 .cr-info div{min-width:0}
@@ -363,7 +401,7 @@ dialog{border-radius:20px;border:3px solid var(--ink);box-shadow:8px 8px 0 var(-
 .danger-txt{color:var(--bad)!important;text-decoration-color:var(--bad)!important}
 
 /* ---- Mobile: compact header, bottom tab bar, full-screen sheets, quieter cards ---- */
-#bnav{display:none;position:fixed;left:0;right:0;bottom:0;z-index:20;grid-template-columns:repeat(5,1fr);background:var(--surface);border-top:2px solid var(--ink);padding:4px max(8px,env(safe-area-inset-right,0px)) calc(4px + env(safe-area-inset-bottom,0px)) max(8px,env(safe-area-inset-left,0px))}
+#bnav{display:none;position:fixed;left:0;right:0;bottom:0;z-index:20;grid-template-columns:repeat(6,1fr);background:var(--surface);border-top:2px solid var(--ink);padding:4px max(8px,env(safe-area-inset-right,0px)) calc(4px + env(safe-area-inset-bottom,0px)) max(8px,env(safe-area-inset-left,0px))}
 #bnav button{border:0;background:none;display:grid;justify-items:center;gap:3px;padding:7px 0 5px;font-family:var(--f-display);font-weight:400;text-transform:uppercase;letter-spacing:.05em;font-size:12px;color:var(--muted);cursor:pointer;border-radius:10px}
 #bnav button svg{width:23px;height:23px}
 #bnav button[aria-current="page"]{color:var(--accent)}
@@ -565,6 +603,7 @@ dialog{border-radius:20px;border:3px solid var(--ink);box-shadow:8px 8px 0 var(-
       <button data-act="tab" data-tab="inicio">Início</button>
       <button data-act="tab" data-tab="agenda">Agenda</button>
       <button data-act="tab" data-tab="tarefas">Tarefas</button>
+      <button data-act="tab" data-tab="chat">Chat<span class="cbadge" hidden></span></button>
       <button data-act="tab" data-tab="avisos">Avisos</button>
       <button data-act="tab" data-tab="arquivos">Arquivos</button>
     </nav>
@@ -585,6 +624,7 @@ dialog{border-radius:20px;border:3px solid var(--ink);box-shadow:8px 8px 0 var(-
   <button type="button" data-act="tab" data-tab="inicio"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 11l9-7 9 7v9a1 1 0 0 1-1 1h-5v-6h-6v6H4a1 1 0 0 1-1-1z"/></svg>Início</button>
   <button type="button" data-act="tab" data-tab="agenda"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><rect x="3" y="5" width="18" height="16" rx="2"/><path d="M3 10h18M8 3v4M16 3v4"/></svg>Agenda</button>
   <button type="button" data-act="tab" data-tab="tarefas"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="3" width="18" height="18" rx="4"/><path d="M8 12l3 3 5-6"/></svg>Tarefas</button>
+  <button type="button" data-act="tab" data-tab="chat"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 12a8 8 0 0 1-11.6 7.1L4 20.5l1.4-4.6A8 8 0 1 1 21 12z"/></svg>Chat<span class="cbadge" hidden></span></button>
   <button type="button" data-act="tab" data-tab="avisos"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 10v4h4l6 4V6L7 10z"/><path d="M17 9a4 4 0 0 1 0 6"/></svg>Avisos</button>
   <button type="button" data-act="tab" data-tab="arquivos"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 7a2 2 0 0 1 2-2h4l2 2h8a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/></svg>Arquivos</button>
 </nav>
@@ -607,7 +647,7 @@ const COLS = ['cultos','eventos','escalas','tarefas','avisos','arquivos'];
 const state = {cultos:[],eventos:[],escalas:[],tarefas:[],avisos:[],arquivos:[]};
 const loaded = {};
 let db = null, mode = 'loading', canWrite = true;
-const TABS = ['inicio','agenda','tarefas','avisos','arquivos'];
+const TABS = ['inicio','agenda','tarefas','chat','avisos','arquivos'];
 let tab = TABS.includes(location.hash.slice(1)) ? location.hash.slice(1) : (()=>{try{return localStorage.getItem('youth-tab')||'inicio'}catch(e){return 'inicio'}})();
 if(!TABS.includes(tab)) tab='inicio';
 const seg = {agenda:'proximos', tarefas:'abertas'};
@@ -700,6 +740,13 @@ async function startSupabase(user){
     else { const rec = {...r.dados, id: r.id}, arr = state[r.colecao], i = arr.findIndex(x => x.id === rec.id); if(i >= 0) arr[i] = rec; else arr.push(rec); }
     render();
   }).subscribe();
+  loadChat();
+  sb.channel('mensagens-youth').on('postgres_changes', {event: '*', schema: 'public', table: 'mensagens'}, p => {
+    if(p.eventType === 'INSERT'){ if(!chatMsgs.some(m => m.id === p.new.id)) chatMsgs.push(p.new); }
+    else if(p.eventType === 'DELETE') chatMsgs = chatMsgs.filter(m => m.id !== p.old.id);
+    else return;
+    chatChanged();
+  }).subscribe();
 }
 document.addEventListener('submit', async ev => {
   if(ev.target.id !== 'loginform') return;
@@ -765,7 +812,10 @@ function render(){
   else bn.innerHTML = '';
 
   document.querySelectorAll('.tabs button, #bnav button').forEach(b => b.setAttribute('aria-current', b.dataset.tab === tab ? 'page' : 'false'));
-  $('#view').innerHTML = VIEWS[tab]();
+  document.body.classList.toggle('on-chat', tab === 'chat');
+  if(tab === 'chat' && $('#chatwrap')) renderChatList();          // keep the composer (and what is being typed) in place
+  else { $('#view').innerHTML = VIEWS[tab](); if(tab === 'chat') renderChatList(true); }
+  updateChatBadge();
   if(dlgMode === 'detail' && $('#dlg').open && !detailCtx.editOpen && !detailCtx.obsDirty) renderDetail();
   renderBell();
 }
@@ -1213,6 +1263,97 @@ function openUrl(url, download){
 }
 document.addEventListener('change', ev => { if(ev.target.id === 'upl-input'){ const fl = ev.target.files; uploadFiles(fl).then(() => { ev.target.value = ''; }); } });
 
+/* ---------- Chat da equipe ----------
+   One group conversation in the Supabase table "mensagens" (webapp only), live through Realtime.
+   The list re-renders on its own; the composer stays put so typing is never lost. */
+let chatMsgs = [], chatLoaded = false, chatErr = '';
+const lower = s => String(s || '').toLowerCase();
+const myName = () => getMe() || (sbUser && sbUser.email ? sbUser.email.split('@')[0].replace(/^./, ch => ch.toUpperCase()) : 'Eu');
+const localDay = d => d.getFullYear() + '-' + pad(d.getMonth() + 1) + '-' + pad(d.getDate());
+function chatTime(iso, withDay){
+  const d = new Date(iso), hm = pad(d.getHours()) + ':' + pad(d.getMinutes());
+  if(!withDay) return hm;
+  const day = localDay(d), t = todayStr();
+  return (day === t ? 'Hoje' : day === addDays(t, -1) ? 'Ontem' : fmtD(day)) + ' · ' + hm;
+}
+async function loadChat(){
+  const {data, error} = await sb.from('mensagens').select('*').order('criado_em', {ascending: false}).limit(300);
+  if(error){ chatErr = /relation|does not exist|schema cache/i.test(error.message) ? 'missing' : error.message; }
+  else { chatMsgs = (data || []).reverse(); chatErr = ''; }
+  chatLoaded = true; chatChanged(true);
+}
+function chatChanged(toBottom){
+  chatMsgs.sort((a, b) => String(a.criado_em).localeCompare(String(b.criado_em)));
+  if(tab === 'chat'){ if($('#chatwrap')) renderChatList(toBottom); else render(); }
+  updateChatBadge(); renderBell();
+}
+const chatSeenAt = () => { try { return localStorage.getItem('youth-chat-seen') || ''; } catch(e){ return chatSeenMem; } };
+let chatSeenMem = '';
+function markChatSeen(){
+  const last = chatMsgs.length ? chatMsgs[chatMsgs.length - 1].criado_em : ''; if(!last) return;
+  chatSeenMem = last; try { localStorage.setItem('youth-chat-seen', last); } catch(e){}
+  chatMsgs.forEach(m => { if(myChatMentions().some(x => x.msg.id === m.id)) markSeen('chat:' + m.id); });
+}
+function updateChatBadge(){
+  const seenAt = chatSeenAt(), me = sbUser ? lower(sbUser.email) : '';
+  const n = tab === 'chat' ? 0 : chatMsgs.filter(m => lower(m.autor_email) !== me && String(m.criado_em) > seenAt).length;
+  document.querySelectorAll('.cbadge').forEach(b => { b.textContent = n > 99 ? '99+' : n; b.hidden = !n; });
+}
+function chatView(){
+  const head = `<div class="bar"><h2>Chat da equipe</h2></div>`;
+  if(!sb) return head + `<div class="empty"><strong>Disponível no app</strong><span>O chat da equipe funciona no webapp. Abra <b>painel-youth.vercel.app</b> para conversar.</span></div>`;
+  if(chatErr === 'missing') return head + `<div class="empty"><strong>Falta ativar o chat</strong><span>Rode o arquivo <b>supabase/5-chat.sql</b> no SQL Editor do Supabase e recarregue o app.</span></div>`;
+  return `<div id="chatwrap">
+    <div class="chat-head"><h2>Chat da equipe</h2><span class="muted chat-as">Você aparece como <b id="chat-me">${esc(myName())}</b> · <button type="button" class="linkbtn" data-act="chat-name">trocar nome</button></span></div>
+    <div id="chatlist" role="log" aria-live="polite" aria-label="Mensagens"></div>
+    <form id="chatform" class="chat-compose" novalidate>
+      <textarea id="chat-text" rows="1" maxlength="2000" placeholder="Mensagem (use @nome)" aria-label="Mensagem"></textarea>
+      <button type="submit" class="chat-send" aria-label="Enviar"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12h14M13 6l6 6-6 6"/></svg></button>
+    </form>
+  </div>`;
+}
+// Highlight @Full Name for people the panel knows, then any other single-word @mention.
+const chatText = t => {
+  const names = [...new Set([...knownPeople(), ...chatMsgs.map(m => m.autor_nome), getMe()].filter(Boolean))];
+  return withMentions(t, names).replace(/(^|[\s(])(@[\p{L}][\p{L}\p{N}._-]*)/gu, '$1<span class="mention">$2</span>');
+};
+function renderChatList(toBottom){
+  const box = $('#chatlist'); if(!box) return;
+  const near = box.scrollHeight - box.scrollTop - box.clientHeight < 120;
+  if(!chatLoaded){ box.innerHTML = '<p class="muted chat-empty">Carregando mensagens…</p>'; return; }
+  if(chatErr){ box.innerHTML = `<p class="muted chat-empty">Não foi possível carregar o chat: ${esc(chatErr)}</p>`; return; }
+  if(!chatMsgs.length){ box.innerHTML = '<div class="chat-empty"><strong>Comece a conversa</strong><span class="muted">As mensagens ficam aqui para todos os membros da equipe.</span></div>'; return; }
+  const me = sbUser ? lower(sbUser.email) : '';
+  let html = '', lastDay = '', lastAuthor = '';
+  chatMsgs.forEach(m => {
+    const d = new Date(m.criado_em), day = localDay(d), mine = lower(m.autor_email) === me;
+    if(day !== lastDay){ html += `<div class="cday"><span>${esc(day === todayStr() ? 'Hoje' : day === addDays(todayStr(), -1) ? 'Ontem' : longDate(day))}</span></div>`; lastDay = day; lastAuthor = ''; }
+    const showName = !mine && lastAuthor !== m.autor_email;
+    lastAuthor = m.autor_email;
+    html += `<div class="msg${mine ? ' me' : ''}"><div class="bubble">
+      ${showName ? `<b class="who">${esc(m.autor_nome || m.autor_email.split('@')[0])}</b>` : ''}
+      <p>${chatText(m.texto)}</p>
+      <span class="mtime">${chatTime(m.criado_em)}${(mine || isAdmin) ? ` <button type="button" class="mdel" data-act="mdel" data-id="${esc(m.id)}" aria-label="Apagar mensagem">apagar</button>` : ''}</span>
+    </div></div>`;
+  });
+  box.innerHTML = html;
+  if(toBottom || near) box.scrollTop = box.scrollHeight;
+  markChatSeen(); updateChatBadge();
+}
+async function sendChat(){
+  const ta = $('#chat-text'), texto = ta.value.trim(); if(!texto || !sb) return;
+  ta.value = ''; ta.style.height = '';
+  const {data, error} = await sb.from('mensagens').insert({texto, autor_nome: myName()}).select().single();
+  if(error){ ta.value = texto; toast(/relation|schema cache/i.test(error.message) ? 'Falta rodar o 5-chat.sql no Supabase.' : 'Não foi possível enviar: ' + error.message); return; }
+  if(!chatMsgs.some(m => m.id === data.id)) chatMsgs.push(data);
+  chatChanged(true);
+}
+document.addEventListener('submit', ev => { if(ev.target.id === 'chatform'){ ev.preventDefault(); sendChat(); } });
+document.addEventListener('keydown', ev => {
+  if(ev.target.id === 'chat-text' && ev.key === 'Enter' && !ev.shiftKey && !matchMedia('(max-width: 640px)').matches){ ev.preventDefault(); sendChat(); }
+});
+document.addEventListener('input', ev => { if(ev.target.id === 'chat-text'){ const t = ev.target; t.style.height = 'auto'; t.style.height = Math.min(t.scrollHeight, 140) + 'px'; } });
+
 /* Home: one of the next three agenda items, with its ordem status and teams at a glance. */
 function homeEventCard(it, first){
   const c = it.culto, esq = escalasFor(it), key = `data-kind="${it.kind}" data-id="${esc(it.id)}"`;
@@ -1300,6 +1441,7 @@ const VIEWS = {
   tarefas(){ return tarefasView(); },
 
   arquivos(){ return arquivosView(); },
+  chat(){ return chatView(); },
 
   avisos(){
     const head = `<div class="bar"><h2>Mural de avisos</h2>${W('<button class="btn primary" data-act="new" data-col="avisos">+ Novo aviso</button>')}</div>`;
@@ -1600,9 +1742,15 @@ function myMentions(){
   const k = norm(me);
   return agendaItems().filter(it => (it.rec.marcados || []).some(n => norm(n) === k)).map(it => ({it, key: mentionKey(it)}));
 }
+function myChatMentions(){
+  const me = getMe(); if(!me || !sbUser) return [];
+  const full = '@' + norm(me), first = '@' + norm(me).split(' ')[0];
+  return chatMsgs.filter(m => lower(m.autor_email) !== lower(sbUser.email) && (norm(m.texto).includes(full) || new RegExp(first.replace(/[.*+?^${}()|[\]\\]/g, '\\$&') + '(?![\\p{L}\\p{N}])', 'u').test(norm(m.texto))))
+    .map(m => ({msg: m, key: 'chat:' + m.id}));
+}
 function renderBell(){
-  const seen = getSeen(), list = myMentions();
-  const unread = list.filter(m => !seen.includes(m.key)).length;
+  const seen = getSeen(), list = myMentions(), chatList = myChatMentions();
+  const unread = list.filter(m => !seen.includes(m.key)).length + chatList.filter(m => !seen.includes(m.key)).length;
   const c = $('#bellcount'); c.textContent = unread; c.hidden = !unread;
   $('#bell').setAttribute('aria-label', unread ? `Marcações: ${unread} nova${unread > 1 ? 's' : ''}` : 'Marcações');
   const pop = $('#bellpop'); if(pop.hidden) return;
@@ -1616,7 +1764,12 @@ function renderBell(){
           <span class="muted mono">${esc(fmtD(m.it.data))}</span>
           <span style="font-size:13px;overflow-wrap:anywhere">${esc((m.it.rec.observacoes || '').slice(0, 110))}${(m.it.rec.observacoes || '').length > 110 ? '…' : ''}</span>
         </button>`).join('')}`
-      : '<p class="muted" style="margin:0;font-size:14px">Nenhuma marcação para você ainda.</p>'}`;
+      : chatList.length ? '' : '<p class="muted" style="margin:0;font-size:14px">Nenhuma marcação para você ainda.</p>'}
+    ${me && chatList.length ? `<div class="eyebrow">No chat da equipe</div>${chatList.slice(-8).reverse().map(m => { const novo = !seen.includes(m.key); return `<button type="button" class="notif ${novo ? 'unread' : ''}" data-act="notif-chat">
+        <span class="row" style="justify-content:space-between"><b>${esc(m.msg.autor_nome || m.msg.autor_email.split('@')[0])}</b>${novo ? '<span class="chip ok">Nova</span>' : ''}</span>
+        <span class="muted mono">${esc(chatTime(m.msg.criado_em, true))}</span>
+        <span style="font-size:13px;overflow-wrap:anywhere">${esc(m.msg.texto.slice(0, 110))}${m.msg.texto.length > 110 ? '…' : ''}</span>
+      </button>`; }).join('')}` : ''}`;
 }
 
 /* ---------- Backup ---------- */
@@ -1800,6 +1953,23 @@ document.addEventListener('click', async ev => {
   else if(act === 'pick'){ pickMention(b.dataset.name); }
   else if(act === 'backup-json' || act === 'backup-csv'){ b.disabled = true; await downloadBackup(act === 'backup-csv'); b.disabled = false; }
   else if(act === 'logout'){ if(sb) await sb.auth.signOut(); location.reload(); }
+  else if(act === 'notif-chat'){ $('#bellpop').hidden = true; tab = 'chat'; render(); window.scrollTo(0, 0); }
+  else if(act === 'chat-name'){
+    const cur = myName(), box = b.closest('.chat-as');
+    box.innerHTML = `<input id="chat-name-in" value="${esc(getMe() || cur)}" maxlength="40" aria-label="Seu nome no chat"> <button type="button" class="linkbtn" data-act="chat-name-ok">salvar</button>`;
+    $('#chat-name-in').focus();
+  }
+  else if(act === 'chat-name-ok'){
+    const v = ($('#chat-name-in').value || '').trim(); if(v) setMe(v);
+    b.closest('.chat-as').innerHTML = `Você aparece como <b id="chat-me">${esc(myName())}</b> · <button type="button" class="linkbtn" data-act="chat-name">trocar nome</button>`;
+    renderBell(); toast('Nome salvo neste aparelho');
+  }
+  else if(act === 'mdel'){
+    if(!b.dataset.armed){ b.dataset.armed = '1'; b.textContent = 'confirmar?'; setTimeout(() => { if(b.isConnected){ delete b.dataset.armed; b.textContent = 'apagar'; } }, 4000); return; }
+    const {error} = await sb.from('mensagens').delete().eq('id', b.dataset.id);
+    if(error){ toast('Não foi possível apagar: ' + error.message); return; }
+    chatMsgs = chatMsgs.filter(m => m.id !== b.dataset.id); chatChanged();
+  }
   else if(act === 'pasta'){ pastaAberta = b.dataset.pasta || null; render(); window.scrollTo(0, 0); }
   else if(act === 'fopen' || act === 'fdown'){
     const f = state.arquivos.find(x => x.id === b.dataset.id); if(!f) return;
