@@ -293,6 +293,73 @@ dialog{border-radius:20px;border:3px solid var(--ink);box-shadow:8px 8px 0 var(-
 .mention{color:var(--violet)}
 .songs .n{color:var(--accent);font-weight:700}
 #toast{border-radius:999px}
+
+/* ---- Mobile: compact header, bottom tab bar, full-screen sheets, quieter cards ---- */
+#bnav{display:none;position:fixed;left:0;right:0;bottom:0;z-index:20;grid-template-columns:repeat(4,1fr);background:var(--surface);border-top:2px solid var(--ink);padding:4px max(8px,env(safe-area-inset-right,0px)) calc(4px + env(safe-area-inset-bottom,0px)) max(8px,env(safe-area-inset-left,0px))}
+#bnav button{border:0;background:none;display:grid;justify-items:center;gap:3px;padding:7px 0 5px;font-family:var(--f-display);font-weight:400;text-transform:uppercase;letter-spacing:.05em;font-size:12px;color:var(--muted);cursor:pointer;border-radius:10px}
+#bnav button svg{width:23px;height:23px}
+#bnav button[aria-current="page"]{color:var(--accent)}
+#bnav button[aria-current="page"] svg{stroke-width:2.6}
+@media (max-width:640px){
+  #bnav{display:grid}
+  header .tabs{display:none}
+  .brand{padding-block:10px 8px;flex-wrap:nowrap}
+  .mark{gap:10px}
+  .mark .logo{height:30px;width:auto}
+  .mark .tag,.hand,#status .st-txt{display:none}
+  .hright{gap:8px}
+  .bellbtn{width:36px;height:36px}
+  .stripes{height:4px}
+  main{padding-block:16px calc(86px + env(safe-area-inset-bottom,0px))}
+  .bar{margin-bottom:14px;gap:10px}
+  .bar h2{font-size:30px;padding-bottom:10px}
+  .bar h2::after{height:5px;width:120px}
+  .verse{padding:16px 18px 18px;border-radius:16px;gap:10px;margin-bottom:18px}
+  .verse-star{font-size:64px;margin:-2px -4px -24px 0}
+  .verse blockquote{font-size:16px;font-weight:500;line-height:1.45}
+  .verse cite{font-size:14px}
+  .home{gap:16px}
+  .card{padding:14px;border-radius:14px}
+  .item{gap:12px}
+  .tile{width:50px;padding:5px 0 6px;border-radius:10px}
+  .tile b{font-size:24px}
+  .tile span{font-size:9px}
+  .linkish{font-size:21px}
+  .next{border-width:2px;box-shadow:5px 5px 0 var(--accent)}
+  .agenda-item:hover{transform:none;box-shadow:none}
+  .next.agenda-item:hover{box-shadow:5px 5px 0 var(--accent)}
+  .agenda-item .body > .row:last-child{display:none}
+  .agenda-item .muted{font-size:13px}
+  .month{font-size:22px;margin:18px 0 8px}
+  .sect-h h3{font-size:20px}
+  .seg{max-width:100%;overflow-x:auto}
+  .seg button{padding:6px 12px;font-size:14px;white-space:nowrap}
+  .chip{font-size:10px;padding:2px 8px}
+  .empty{padding:22px 16px}
+  .empty strong{font-size:22px}
+  .tadd{border-radius:14px;padding:8px}
+  .tadd .btn{display:none}
+  .tadd input{padding:11px 16px}
+  .todo{padding:12px;border-radius:12px;gap:10px}
+  .tgroup h3{font-size:19px}
+  .dl-legend{margin:-8px 0 16px}
+  .pfoot{padding-block:16px 6px;gap:10px;border-top-width:1px}
+  .pfoot > div:first-child{font-size:12px}
+  .pfoot b{font-size:15px}
+  .pfoot .btn{padding:6px 12px;font-size:13px}
+  #toast{bottom:calc(80px + env(safe-area-inset-bottom,0px))}
+  dialog{width:100vw;max-width:100vw;height:100%;max-height:100%;margin:0;border:0;border-radius:0;box-shadow:none}
+  dialog form,.dwrap{height:100%;max-height:100%}
+  .dh{padding:12px 16px;padding-top:calc(12px + env(safe-area-inset-top,0px))}
+  .dh h2,.ttitle{font-size:22px}
+  .dh .tile{width:44px}
+  .db,.dbody{padding:14px 16px 20px}
+  .df{padding:10px 16px calc(10px + env(safe-area-inset-bottom,0px))}
+  .steps{padding:4px 10px 0}
+  .steps button{font-size:15px;padding:8px 8px 9px}
+  .editbar{padding:10px 16px}
+  .loginbox{padding:22px;box-shadow:5px 5px 0 var(--accent)}
+}
 #login{position:fixed;inset:0;z-index:40;background:var(--bg);display:grid;place-items:center;padding:max(16px,env(safe-area-inset-left,0px))}
 .loginbox{width:min(380px,100%);display:grid;gap:14px;background:var(--surface);border:3px solid var(--ink);border-radius:20px;padding:26px;box-shadow:8px 8px 0 var(--accent)}
 .loginbox img{height:52px;width:auto}
@@ -431,6 +498,12 @@ dialog{border-radius:20px;border:3px solid var(--ink);box-shadow:8px 8px 0 var(-
   <div class="row"><button type="button" class="btn" data-act="backup-json">Baixar backup completo (JSON)</button><button type="button" class="btn ghost" data-act="backup-csv">Planilha da agenda (CSV)</button></div>
 </footer>
 
+<nav id="bnav" aria-label="Pastas">
+  <button type="button" data-act="tab" data-tab="inicio"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 11l9-7 9 7v9a1 1 0 0 1-1 1h-5v-6h-6v6H4a1 1 0 0 1-1-1z"/></svg>Início</button>
+  <button type="button" data-act="tab" data-tab="agenda"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><rect x="3" y="5" width="18" height="16" rx="2"/><path d="M3 10h18M8 3v4M16 3v4"/></svg>Agenda</button>
+  <button type="button" data-act="tab" data-tab="tarefas"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="3" width="18" height="18" rx="4"/><path d="M8 12l3 3 5-6"/></svg>Tarefas</button>
+  <button type="button" data-act="tab" data-tab="avisos"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 10v4h4l6 4V6L7 10z"/><path d="M17 9a4 4 0 0 1 0 6"/></svg>Avisos</button>
+</nav>
 <div id="login" hidden>
   <form id="loginform" class="loginbox" novalidate>
     <img src="youth-logo.png" alt="Youth" width="140" height="60">
@@ -592,10 +665,10 @@ async function removeRec(col, id){
 /* ---------- Render ---------- */
 function render(){
   const st = $('#status');
-  if(mode === 'loading') st.innerHTML = '<span class="dot"></span> Conectando…';
-  else if(mode === 'local') st.innerHTML = '<span class="dot"></span> Modo de teste';
-  else if(sb) st.innerHTML = `<span class="dot live"></span> ${esc(sbUser && sbUser.email || 'Conectado')} <button type="button" class="btn ghost" data-act="logout" style="padding:2px 6px;font-size:12px">Sair</button>`;
-  else st.innerHTML = `<span class="dot live"></span> ${canWrite ? 'Sincronizado com a equipe' : 'Somente leitura'}`;
+  if(mode === 'loading') st.innerHTML = '<span class="dot"></span> <span class="st-txt">Conectando…</span>';
+  else if(mode === 'local') st.innerHTML = '<span class="dot"></span> <span class="st-txt">Modo de teste</span>';
+  else if(sb) st.innerHTML = `<span class="dot live"></span> <span class="st-txt">${esc(sbUser && sbUser.email || 'Conectado')}</span> <button type="button" class="btn ghost" data-act="logout" style="padding:2px 6px;font-size:12px">Sair</button>`;
+  else st.innerHTML = `<span class="dot live"></span> <span class="st-txt">${canWrite ? 'Sincronizado com a equipe' : 'Somente leitura'}</span>`;
 
   const bn = $('#banner');
   if(mode === 'local' && CFG) bn.innerHTML = '<div class="banner"><b>Banco não configurado.</b> Preencha o arquivo config.js com o endereço e a chave do Supabase.</div>';
@@ -603,7 +676,7 @@ function render(){
   else if(mode === 'live' && !canWrite) bn.innerHTML = '<div class="banner"><b>Somente leitura.</b> Você pode ver tudo, mas não editar. Peça ao pastor acesso de edição ao painel.</div>';
   else bn.innerHTML = '';
 
-  document.querySelectorAll('.tabs button').forEach(b => b.setAttribute('aria-current', b.dataset.tab === tab ? 'page' : 'false'));
+  document.querySelectorAll('.tabs button, #bnav button').forEach(b => b.setAttribute('aria-current', b.dataset.tab === tab ? 'page' : 'false'));
   $('#view').innerHTML = VIEWS[tab]();
   if(dlgMode === 'detail' && $('#dlg').open && !detailCtx.editOpen && !detailCtx.obsDirty) renderDetail();
   renderBell();
