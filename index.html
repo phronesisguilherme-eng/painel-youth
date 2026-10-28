@@ -1152,10 +1152,21 @@ function updateProg(){
   txt.textContent = rows.length ? `${ok} de ${rows.length}` : 'Sem itens';
   rows.forEach(r => r.classList.toggle('ok', r.querySelector('input[type=checkbox]').checked));
 }
+/* Checklist drives the status: all items ticked = Feito; some ticked = Fazendo. */
+function syncStatusFromChecklist(){
+  const boxes = [...document.querySelectorAll('#tlist .titem input[type=checkbox]')], sel = $('#t-status');
+  if(!boxes.length || !sel) return;
+  const done = boxes.filter(b => b.checked).length, before = sel.value;
+  if(done === boxes.length) sel.value = 'feito';
+  else if(done > 0 && before !== 'fazendo') sel.value = 'fazendo';
+  else if(done === 0 && before === 'feito') sel.value = 'afazer';
+  const big = $('#dlg .check.big'); if(big) big.classList.toggle('on', sel.value === 'feito');
+  if(sel.value !== before) toast(sel.value === 'feito' ? 'Todos os itens feitos: tarefa concluída' : sel.value === 'fazendo' ? 'Tarefa em andamento' : 'Tarefa reaberta');
+}
 function addChecklistItem(){
   const inp = $('#t-newitem'); if(!inp || !inp.value.trim()) return;
   $('#tlist').insertAdjacentHTML('beforeend', itemRow({t: inp.value.trim(), ok: false}, 'n' + (++rowSeq)));
-  inp.value = ''; inp.focus(); updateProg();
+  inp.value = ''; inp.focus(); updateProg(); syncStatusFromChecklist();
 }
 function readTask(form){
   const old = taskCtx.id ? (state.tarefas.find(x => x.id === taskCtx.id) || {}) : {};
@@ -1165,6 +1176,7 @@ function readTask(form){
     prazo: form.elements.prazo.value, prioridade: form.elements.prioridade.value, eventoRef: form.elements.eventoRef.value,
     itens: [...form.querySelectorAll('#tlist .titem')].map(r => ({t: r.querySelector('input[type=text]').value.trim(), ok: r.querySelector('input[type=checkbox]').checked})).filter(i => i.t)};
   const pending = $('#t-newitem') && $('#t-newitem').value.trim(); if(pending) rec.itens.push({t: pending, ok: false});
+  if(rec.itens.length && rec.itens.every(i => i.ok)) rec.status = 'feito';
   rec.concluidaEm = rec.status === 'feito' ? (old.status === 'feito' && old.concluidaEm ? old.concluidaEm : new Date().toISOString()) : '';
   if(!taskCtx.id) rec.criadoEm = new Date().toISOString();
   return rec;
@@ -1192,7 +1204,7 @@ document.addEventListener('submit', async ev => {
 });
 document.addEventListener('keydown', ev => { if(ev.target.id === 't-newitem' && ev.key === 'Enter'){ ev.preventDefault(); addChecklistItem(); } });
 document.addEventListener('change', ev => {
-  if(ev.target.closest && ev.target.closest('#tlist')) updateProg();
+  if(ev.target.closest && ev.target.closest('#tlist')){ updateProg(); if(ev.target.type === 'checkbox') syncStatusFromChecklist(); }
   if(ev.target.id === 't-status'){ const c = $('#dlg .check.big'); if(c) c.classList.toggle('on', ev.target.value === 'feito'); }
 });
 
@@ -2023,7 +2035,7 @@ document.addEventListener('click', async ev => {
   else if(act === 'topen'){ openTask(b.dataset.id); }
   else if(act === 'tcheck'){ b.disabled = true; await toggleTask(b.dataset.id); }
   else if(act === 'tdcheck'){ const s = $('#t-status'); s.value = s.value === 'feito' ? 'afazer' : 'feito'; b.classList.toggle('on', s.value === 'feito'); }
-  else if(act === 'titem-rm'){ b.closest('.titem').remove(); updateProg(); }
+  else if(act === 'titem-rm'){ b.closest('.titem').remove(); updateProg(); syncStatusFromChecklist(); }
   else if(act === 'tdel'){
     if(!b.dataset.armed){ b.dataset.armed = '1'; b.textContent = 'Clique de novo para excluir'; setTimeout(() => { if(b.isConnected){ delete b.dataset.armed; b.textContent = 'Excluir'; } }, 4000); return; }
     if(await removeRec('tarefas', taskCtx.id)){ toast('Tarefa excluída'); $('#dlg').close(); }
