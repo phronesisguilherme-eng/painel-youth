@@ -846,7 +846,14 @@ document.addEventListener('submit', async ev => {
   startSupabase(data.user);
 });
 
+// In the webapp, never pretend to save: without a live Supabase session nothing may be kept only on screen.
+function guardWebappSave(){
+  if(!CFG || (mode === 'live' && sb)) return true;
+  toast(CFG.supabaseUrl ? 'Não foi salvo: faça login de novo.' : 'Não foi salvo: este endereço do app não está ligado ao banco. Use painel-youth.vercel.app.');
+  return false;
+}
 async function save(col, rec){
+  if(!guardWebappSave()) return false;
   const id = rec.id || uid();
   const body = {...rec}; delete body.id;
   body.atualizadoEm = new Date().toISOString();
@@ -872,6 +879,7 @@ async function save(col, rec){
   return true;
 }
 async function removeRec(col, id){
+  if(!guardWebappSave()) return false;
   if(mode === 'live' && sb){
     const {error} = await sb.from('registros').delete().match({colecao: col, id});
     if(error){ toast('Não foi possível excluir: ' + error.message); return false; }
@@ -892,7 +900,7 @@ function render(){
   else st.innerHTML = `<span class="dot live"></span> <span class="st-txt">${canWrite ? 'Sincronizado com a equipe' : 'Somente leitura'}</span>`;
 
   const bn = $('#banner');
-  if(mode === 'local' && CFG) bn.innerHTML = '<div class="banner"><b>Banco não configurado.</b> Preencha o arquivo config.js com o endereço e a chave do Supabase.</div>';
+  if(mode === 'local' && CFG) bn.innerHTML = '<div class="banner" style="background:#E10031;color:#fff"><b>Este app não está ligado ao banco.</b> Nada do que for feito aqui será salvo. Abra <b>painel-youth.vercel.app</b> e apague o ícone antigo da tela inicial.</div>';
   else if(mode === 'local') bn.innerHTML = '<div class="banner"><b>Modo de teste.</b> O que você cadastrar aqui fica só nesta tela e some ao recarregar. Abra pelo link do claude.ai, conectado à sua conta, para salvar para toda a equipe.</div>';
   else if(mode === 'live' && !canWrite) bn.innerHTML = '<div class="banner"><b>Somente leitura.</b> Você pode ver tudo, mas não editar. Peça ao pastor acesso de edição ao painel.</div>';
   else bn.innerHTML = '';
