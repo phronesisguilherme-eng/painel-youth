@@ -305,12 +305,21 @@ dialog{border-radius:20px;border:3px solid var(--ink);box-shadow:8px 8px 0 var(-
 .todo .chip{white-space:normal;max-width:100%}
 
 /* Chat */
-body.on-chat .pfoot{display:none}
-.cbadge{display:inline-grid;place-items:center;min-width:18px;height:18px;padding:0 5px;margin-left:6px;border-radius:999px;background:#FE003E;color:#fff;font:700 11px/1 var(--f-mono);vertical-align:2px}
-#bnav button{position:relative}
-#bnav .cbadge{position:absolute;top:2px;left:calc(50% + 6px);margin:0}
-#chatwrap{display:flex;flex-direction:column;height:calc(100vh - 210px);height:calc(100dvh - 210px);min-height:360px;background:var(--card);border-radius:20px;overflow:hidden}
-.chat-head{display:flex;justify-content:space-between;align-items:baseline;gap:10px;flex-wrap:wrap;padding:14px 18px 10px;border-bottom:1px solid var(--line);background:var(--surface)}
+#chatfab-wrap{position:fixed;z-index:25;right:max(18px,calc(env(safe-area-inset-right,0px) + 12px));bottom:calc(22px + env(safe-area-inset-bottom,0px))}
+#chatfab{width:64px;height:64px;border:0;background:none;padding:0;cursor:pointer;color:#E8003F;filter:drop-shadow(3px 3px 0 #0B0B0C);transition:transform .15s}
+#chatfab svg{width:100%;height:100%}
+#chatfab:hover{transform:rotate(30deg) scale(1.06)}
+#chatfab:focus-visible{outline:2px solid #0B0B0C;outline-offset:4px;border-radius:50%}
+@media (prefers-reduced-motion:reduce){#chatfab{transition:none}#chatfab:hover{transform:none}}
+#chatfab .cbadge{position:absolute;top:-2px;right:-4px}
+#chatfab-x{position:absolute;top:-6px;left:-8px;width:22px;height:22px;border-radius:50%;border:2px solid #FFFFFF;background:#0B0B0C;color:#FFFFFF;font-size:14px;line-height:1;display:grid;place-items:center;cursor:pointer;padding:0}
+#chatfab-x:hover{background:#E8003F}
+.cbadge{display:inline-grid;place-items:center;min-width:20px;height:20px;padding:0 5px;border-radius:999px;background:#0B0B0C;color:#fff;font:700 11px/1 var(--f-mono);border:2px solid #FFFFFF}
+#chatpanel{position:fixed;z-index:30;right:max(20px,env(safe-area-inset-right,0px));bottom:calc(20px + env(safe-area-inset-bottom,0px));width:min(400px,calc(100vw - 32px));height:min(620px,calc(100vh - 120px));height:min(620px,calc(100dvh - 120px));border:3px solid var(--ink);border-radius:20px;box-shadow:8px 8px 0 var(--accent);overflow:hidden;background:var(--card)}
+#chatwrap{display:flex;flex-direction:column;height:100%;background:var(--card)}
+.chat-head{display:flex;justify-content:space-between;align-items:flex-start;gap:10px;padding:12px 14px 10px 18px;border-bottom:1px solid var(--line);background:var(--surface)}
+.chat-head > div{display:grid;gap:2px;min-width:0}
+.chat-x{font-size:26px;padding:2px 6px;margin:-4px -4px 0 0}
 .chat-head h2{font-family:var(--f-display);font-weight:400;text-transform:uppercase;font-size:26px;letter-spacing:.01em}
 .chat-as{font-size:13px}
 .chat-as input{border:1px solid var(--ink);border-radius:6px;padding:3px 8px;background:var(--bg);width:150px}
@@ -335,9 +344,10 @@ body.on-chat .pfoot{display:none}
 .chat-send{flex:none;width:42px;height:42px;border-radius:50%;border:0;background:var(--accent);color:#fff;display:grid;place-items:center;cursor:pointer}
 .chat-send:hover{background:var(--ink)}
 @media (max-width:640px){
-  body.on-chat main{padding-block:8px calc(70px + env(safe-area-inset-bottom,0px))}
-  #chatwrap{height:calc(100vh - 150px - env(safe-area-inset-bottom,0px));height:calc(100dvh - 150px - env(safe-area-inset-bottom,0px));border-radius:14px;min-height:300px}
-  .chat-head{padding:10px 14px 8px}
+  #chatfab-wrap{bottom:calc(84px + env(safe-area-inset-bottom,0px));right:max(14px,calc(env(safe-area-inset-right,0px) + 10px))}
+  #chatfab{width:56px;height:56px}
+  #chatpanel{inset:0;width:100%;height:100%;border:0;border-radius:0;box-shadow:none;z-index:35;padding:env(safe-area-inset-top,0px) env(safe-area-inset-right,0px) env(safe-area-inset-bottom,0px) env(safe-area-inset-left,0px);background:var(--surface)}
+  .chat-head{padding:10px 12px 8px 16px}
   .chat-head h2{font-size:20px}
   .bubble{max-width:84%}
 }
@@ -401,7 +411,7 @@ body.on-chat .pfoot{display:none}
 .danger-txt{color:var(--bad)!important;text-decoration-color:var(--bad)!important}
 
 /* ---- Mobile: compact header, bottom tab bar, full-screen sheets, quieter cards ---- */
-#bnav{display:none;position:fixed;left:0;right:0;bottom:0;z-index:20;grid-template-columns:repeat(6,1fr);background:var(--surface);border-top:2px solid var(--ink);padding:4px max(8px,env(safe-area-inset-right,0px)) calc(4px + env(safe-area-inset-bottom,0px)) max(8px,env(safe-area-inset-left,0px))}
+#bnav{display:none;position:fixed;left:0;right:0;bottom:0;z-index:20;grid-template-columns:repeat(5,1fr);background:var(--surface);border-top:2px solid var(--ink);padding:4px max(8px,env(safe-area-inset-right,0px)) calc(4px + env(safe-area-inset-bottom,0px)) max(8px,env(safe-area-inset-left,0px))}
 #bnav button{border:0;background:none;display:grid;justify-items:center;gap:3px;padding:7px 0 5px;font-family:var(--f-display);font-weight:400;text-transform:uppercase;letter-spacing:.05em;font-size:12px;color:var(--muted);cursor:pointer;border-radius:10px}
 #bnav button svg{width:23px;height:23px}
 #bnav button[aria-current="page"]{color:var(--accent)}
@@ -603,7 +613,6 @@ body.on-chat .pfoot{display:none}
       <button data-act="tab" data-tab="inicio">Início</button>
       <button data-act="tab" data-tab="agenda">Agenda</button>
       <button data-act="tab" data-tab="tarefas">Tarefas</button>
-      <button data-act="tab" data-tab="chat">Chat<span class="cbadge" hidden></span></button>
       <button data-act="tab" data-tab="avisos">Avisos</button>
       <button data-act="tab" data-tab="arquivos">Arquivos</button>
     </nav>
@@ -617,17 +626,24 @@ body.on-chat .pfoot{display:none}
 </main>
 <footer class="wrap pfoot">
   <div><b>Exportar agenda</b><span class="muted">Baixe todos os eventos numa planilha para abrir no Excel ou no Google Planilhas.</span></div>
-  <div class="row"><button type="button" class="btn" data-act="backup-csv">Baixar planilha da agenda</button></div>
+  <div class="row"><button type="button" class="btn" data-act="backup-csv">Baixar planilha da agenda</button><button type="button" class="btn ghost" id="chat-show" data-act="chat-show" hidden>Mostrar chat</button></div>
 </footer>
 
 <nav id="bnav" aria-label="Pastas">
   <button type="button" data-act="tab" data-tab="inicio"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 11l9-7 9 7v9a1 1 0 0 1-1 1h-5v-6h-6v6H4a1 1 0 0 1-1-1z"/></svg>Início</button>
   <button type="button" data-act="tab" data-tab="agenda"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><rect x="3" y="5" width="18" height="16" rx="2"/><path d="M3 10h18M8 3v4M16 3v4"/></svg>Agenda</button>
   <button type="button" data-act="tab" data-tab="tarefas"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="3" width="18" height="18" rx="4"/><path d="M8 12l3 3 5-6"/></svg>Tarefas</button>
-  <button type="button" data-act="tab" data-tab="chat"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 12a8 8 0 0 1-11.6 7.1L4 20.5l1.4-4.6A8 8 0 1 1 21 12z"/></svg>Chat<span class="cbadge" hidden></span></button>
   <button type="button" data-act="tab" data-tab="avisos"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 10v4h4l6 4V6L7 10z"/><path d="M17 9a4 4 0 0 1 0 6"/></svg>Avisos</button>
   <button type="button" data-act="tab" data-tab="arquivos"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 7a2 2 0 0 1 2-2h4l2 2h8a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/></svg>Arquivos</button>
 </nav>
+<div id="chatfab-wrap" hidden>
+  <button type="button" id="chatfab" data-act="chat-open" aria-label="Abrir chat da equipe">
+    <svg viewBox="0 0 24 24" aria-hidden="true"><g fill="currentColor"><rect x="9.9" y="1.5" width="4.2" height="21" rx="1"/><rect x="9.9" y="1.5" width="4.2" height="21" rx="1" transform="rotate(60 12 12)"/><rect x="9.9" y="1.5" width="4.2" height="21" rx="1" transform="rotate(120 12 12)"/></g></svg>
+    <span class="cbadge" hidden></span>
+  </button>
+  <button type="button" id="chatfab-x" data-act="chat-hide" aria-label="Esconder o botão do chat">×</button>
+</div>
+<section id="chatpanel" hidden aria-label="Chat da equipe"></section>
 <div id="login" hidden>
   <form id="loginform" class="loginbox" novalidate>
     <img src="youth-logo.png" alt="Youth" width="140" height="60">
@@ -647,7 +663,7 @@ const COLS = ['cultos','eventos','escalas','tarefas','avisos','arquivos'];
 const state = {cultos:[],eventos:[],escalas:[],tarefas:[],avisos:[],arquivos:[]};
 const loaded = {};
 let db = null, mode = 'loading', canWrite = true;
-const TABS = ['inicio','agenda','tarefas','chat','avisos','arquivos'];
+const TABS = ['inicio','agenda','tarefas','avisos','arquivos'];
 let tab = TABS.includes(location.hash.slice(1)) ? location.hash.slice(1) : (()=>{try{return localStorage.getItem('youth-tab')||'inicio'}catch(e){return 'inicio'}})();
 if(!TABS.includes(tab)) tab='inicio';
 const seg = {agenda:'proximos', tarefas:'abertas'};
@@ -812,10 +828,9 @@ function render(){
   else bn.innerHTML = '';
 
   document.querySelectorAll('.tabs button, #bnav button').forEach(b => b.setAttribute('aria-current', b.dataset.tab === tab ? 'page' : 'false'));
-  document.body.classList.toggle('on-chat', tab === 'chat');
-  if(tab === 'chat' && $('#chatwrap')) renderChatList();          // keep the composer (and what is being typed) in place
-  else { $('#view').innerHTML = VIEWS[tab](); if(tab === 'chat') renderChatList(true); }
-  updateChatBadge();
+  $('#view').innerHTML = VIEWS[tab]();
+  if(chatOpen) renderChatList();   // the floating chat keeps its composer; only the message list refreshes
+  updateChatFab();
   if(dlgMode === 'detail' && $('#dlg').open && !detailCtx.editOpen && !detailCtx.obsDirty) renderDetail();
   renderBell();
 }
@@ -1284,9 +1299,29 @@ async function loadChat(){
 }
 function chatChanged(toBottom){
   chatMsgs.sort((a, b) => String(a.criado_em).localeCompare(String(b.criado_em)));
-  if(tab === 'chat'){ if($('#chatwrap')) renderChatList(toBottom); else render(); }
-  updateChatBadge(); renderBell();
+  if(chatOpen) renderChatList(toBottom);
+  updateChatFab(); renderBell();
 }
+/* Floating asterisk: opens the chat panel; its small × hides it (remembered on this device). */
+let chatOpen = false;
+const fabHidden = () => { try { return localStorage.getItem('youth-chat-fab') === 'off'; } catch(e){ return fabHiddenMem; } };
+let fabHiddenMem = false;
+function setFabHidden(v){ fabHiddenMem = v; try { v ? localStorage.setItem('youth-chat-fab', 'off') : localStorage.removeItem('youth-chat-fab'); } catch(e){} updateChatFab(); }
+function updateChatFab(){
+  const wrap = $('#chatfab-wrap'); if(!wrap) return;
+  wrap.hidden = !sb || chatOpen || fabHidden();
+  const link = $('#chat-show'); if(link) link.hidden = !sb || !fabHidden();
+  updateChatBadge();
+}
+function openChat(){
+  if(!sb) return;
+  chatOpen = true;
+  const p = $('#chatpanel'); p.innerHTML = chatView(); p.hidden = false;
+  renderChatList(true); updateChatFab();
+  setTimeout(() => { const t = $('#chat-text'); if(t && !matchMedia('(max-width: 640px)').matches) t.focus(); }, 0);
+}
+function closeChat(){ chatOpen = false; const p = $('#chatpanel'); p.hidden = true; p.innerHTML = ''; updateChatFab(); }
+document.addEventListener('keydown', ev => { if(ev.key === 'Escape' && chatOpen && !$('#dlg').open) closeChat(); });
 const chatSeenAt = () => { try { return localStorage.getItem('youth-chat-seen') || ''; } catch(e){ return chatSeenMem; } };
 let chatSeenMem = '';
 function markChatSeen(){
@@ -1296,15 +1331,14 @@ function markChatSeen(){
 }
 function updateChatBadge(){
   const seenAt = chatSeenAt(), me = sbUser ? lower(sbUser.email) : '';
-  const n = tab === 'chat' ? 0 : chatMsgs.filter(m => lower(m.autor_email) !== me && String(m.criado_em) > seenAt).length;
+  const n = chatOpen ? 0 : chatMsgs.filter(m => lower(m.autor_email) !== me && String(m.criado_em) > seenAt).length;
   document.querySelectorAll('.cbadge').forEach(b => { b.textContent = n > 99 ? '99+' : n; b.hidden = !n; });
 }
 function chatView(){
-  const head = `<div class="bar"><h2>Chat da equipe</h2></div>`;
-  if(!sb) return head + `<div class="empty"><strong>Disponível no app</strong><span>O chat da equipe funciona no webapp. Abra <b>painel-youth.vercel.app</b> para conversar.</span></div>`;
-  if(chatErr === 'missing') return head + `<div class="empty"><strong>Falta ativar o chat</strong><span>Rode o arquivo <b>supabase/5-chat.sql</b> no SQL Editor do Supabase e recarregue o app.</span></div>`;
+  const close = '<button type="button" class="x chat-x" data-act="chat-close" aria-label="Fechar o chat">×</button>';
+  if(chatErr === 'missing') return `<div id="chatwrap"><div class="chat-head"><h2>Chat da equipe</h2>${close}</div><div class="chat-empty"><strong>Falta ativar o chat</strong><span class="muted">Rode o arquivo <b>supabase/5-chat.sql</b> no SQL Editor do Supabase e recarregue o app.</span></div></div>`;
   return `<div id="chatwrap">
-    <div class="chat-head"><h2>Chat da equipe</h2><span class="muted chat-as">Você aparece como <b id="chat-me">${esc(myName())}</b> · <button type="button" class="linkbtn" data-act="chat-name">trocar nome</button></span></div>
+    <div class="chat-head"><div><h2>Chat da equipe</h2><span class="muted chat-as">Você aparece como <b id="chat-me">${esc(myName())}</b> · <button type="button" class="linkbtn" data-act="chat-name">trocar nome</button></span></div>${close}</div>
     <div id="chatlist" role="log" aria-live="polite" aria-label="Mensagens"></div>
     <form id="chatform" class="chat-compose" novalidate>
       <textarea id="chat-text" rows="1" maxlength="2000" placeholder="Mensagem (use @nome)" aria-label="Mensagem"></textarea>
@@ -1441,7 +1475,6 @@ const VIEWS = {
   tarefas(){ return tarefasView(); },
 
   arquivos(){ return arquivosView(); },
-  chat(){ return chatView(); },
 
   avisos(){
     const head = `<div class="bar"><h2>Mural de avisos</h2>${W('<button class="btn primary" data-act="new" data-col="avisos">+ Novo aviso</button>')}</div>`;
@@ -1953,7 +1986,11 @@ document.addEventListener('click', async ev => {
   else if(act === 'pick'){ pickMention(b.dataset.name); }
   else if(act === 'backup-json' || act === 'backup-csv'){ b.disabled = true; await downloadBackup(act === 'backup-csv'); b.disabled = false; }
   else if(act === 'logout'){ if(sb) await sb.auth.signOut(); location.reload(); }
-  else if(act === 'notif-chat'){ $('#bellpop').hidden = true; tab = 'chat'; render(); window.scrollTo(0, 0); }
+  else if(act === 'notif-chat'){ $('#bellpop').hidden = true; openChat(); }
+  else if(act === 'chat-open'){ openChat(); }
+  else if(act === 'chat-close'){ closeChat(); }
+  else if(act === 'chat-hide'){ setFabHidden(true); toast('Botão do chat escondido. Para trazer de volta, use "Mostrar chat" no rodapé.'); }
+  else if(act === 'chat-show'){ setFabHidden(false); openChat(); }
   else if(act === 'chat-name'){
     const cur = myName(), box = b.closest('.chat-as');
     box.innerHTML = `<input id="chat-name-in" value="${esc(getMe() || cur)}" maxlength="40" aria-label="Seu nome no chat"> <button type="button" class="linkbtn" data-act="chat-name-ok">salvar</button>`;
