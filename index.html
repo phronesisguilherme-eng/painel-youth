@@ -304,6 +304,22 @@ dialog{border-radius:20px;border:3px solid var(--ink);box-shadow:8px 8px 0 var(-
 .todo .tbody .row{gap:5px}
 .todo .chip{white-space:normal;max-width:100%}
 
+/* Menu da conta */
+.menuwrap{position:relative}
+#menupop{position:absolute;right:0;top:46px;width:min(300px,calc(100vw - 32px));background:var(--surface);color:var(--ink);border:2px solid var(--ink);border-radius:14px;box-shadow:6px 6px 0 var(--accent);padding:8px;z-index:30;display:grid;gap:2px}
+.mhead{display:flex;gap:10px;align-items:center;padding:8px 8px 12px;border-bottom:1px solid var(--line);margin-bottom:4px}
+.mhead > div{display:grid;gap:2px;min-width:0}
+.mhead b{font-size:15px;overflow-wrap:anywhere}
+.mhead .mono{font-size:11px;overflow-wrap:anywhere}
+.mavatar{width:40px;height:40px;border-radius:50%;background:var(--accent);color:#fff;display:grid;place-items:center;font-family:var(--f-display);font-size:20px;flex:none}
+.mrow{display:flex;gap:8px;align-items:flex-end}
+.mrow .fld{padding:4px}
+.mrow .btn{margin:0 4px 4px 0}
+.mitem{display:flex;align-items:center;gap:10px;width:100%;border:0;background:none;padding:10px;border-radius:9px;cursor:pointer;font-weight:600;font-size:14px;color:var(--ink);text-align:left}
+.mitem svg{width:18px;height:18px;flex:none}
+.mitem:hover,.mitem:focus-visible{background:var(--soft)}
+.mout{border-top:1px solid var(--line);margin-top:4px;padding-top:4px}
+
 /* Online agora */
 #online{display:flex;align-items:center;gap:6px;flex-wrap:wrap;justify-content:flex-end;max-width:420px}
 .on-label{font-family:var(--f-mono);font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:var(--muted)}
@@ -630,6 +646,12 @@ dialog{border-radius:20px;border:3px solid var(--ink);box-shadow:8px 8px 0 var(-
           </button>
           <div id="bellpop" hidden></div>
         </div>
+        <div class="menuwrap" id="menuwrap" hidden>
+          <button type="button" id="menubtn" class="bellbtn" data-act="menu" aria-label="Menu da conta" aria-haspopup="true" aria-expanded="false">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" aria-hidden="true"><path d="M4 7h16M4 12h16M4 17h16"/></svg>
+          </button>
+          <div id="menupop" hidden></div>
+        </div>
       </div>
     </div>
     <nav class="tabs" aria-label="Pastas">
@@ -822,6 +844,45 @@ async function startSupabase(user){
     chatChanged();
   }).subscribe();
 }
+/* Account menu (three bars): name, password, chat button, sign out. */
+async function saveMyName(v){
+  setMe(v);
+  // Saved for the whole team, so others find this person in the @ list and in "online".
+  const {error} = await sb.rpc('definir_meu_nome', {novo: v});
+  const me = equipe.find(m => lower(m.email) === lower(sbUser.email));
+  if(!error && me) me.nome = v;
+  retrackPresence(); renderBell(); render();
+  const as = $('#chat-me'); if(as) as.textContent = myName();
+  toast(error ? 'Nome salvo neste aparelho (falta rodar o 6-nomes-da-equipe.sql para a equipe ver)' : 'Nome salvo para a equipe');
+}
+function renderMenu(){
+  const p = $('#menupop'); if(!p || !sbUser) return;
+  const me = equipe.find(m => lower(m.email) === lower(sbUser.email));
+  p.innerHTML = `<div class="mhead"><span class="mavatar" aria-hidden="true">${esc(myName().replace(/^(Pr\.?|Pra\.?)\s+/i, '').charAt(0).toUpperCase())}</span><div><b>${esc(myName())}</b><span class="muted mono">${esc(sbUser.email)}</span>${me && me.papel === 'admin' ? '<span class="chip key" style="justify-self:start">Administrador</span>' : ''}</div></div>
+    <div class="mrow"><button type="button" class="mitem" data-act="menu-name"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 20h9"/><path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4z"/></svg>Mudar meu nome</button></div>
+    <div class="mrow"><button type="button" class="mitem" data-act="menu-senha"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="4" y="11" width="16" height="10" rx="2"/><path d="M8 11V7a4 4 0 0 1 8 0v4"/></svg>Trocar minha senha</button></div>
+    ${fabHidden() ? '<div class="mrow"><button type="button" class="mitem" data-act="menu-chat"><svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><rect x="10.5" y="3" width="3" height="18" rx="1"/><rect x="10.5" y="3" width="3" height="18" rx="1" transform="rotate(60 12 12)"/><rect x="10.5" y="3" width="3" height="18" rx="1" transform="rotate(120 12 12)"/></svg>Mostrar o chat</button></div>' : ''}
+    <div class="mrow mout"><button type="button" class="mitem danger-txt" data-act="logout"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><path d="M16 17l5-5-5-5M21 12H9"/></svg>Sair da conta</button></div>`;
+}
+function openSenha(){
+  dlgMode = 'pass'; editing = null;
+  $('#dlg').innerHTML = `<form id="passform" novalidate>
+    <div class="dh"><h2>Trocar minha senha</h2><button type="button" class="x" data-act="close" aria-label="Fechar">×</button></div>
+    <div class="db">
+      <p class="hint-step">Conta: <b>${esc(sbUser && sbUser.email || '')}</b>. A senha precisa ter pelo menos 6 caracteres.</p>
+      <div class="fld full"><label for="pw1">Nova senha</label><input id="pw1" name="pw1" type="password" autocomplete="new-password" minlength="6" required></div>
+      <div class="fld full"><label for="pw2">Repita a nova senha</label><input id="pw2" name="pw2" type="password" autocomplete="new-password" minlength="6" required></div>
+      <p class="muted full" id="pw-msg" role="alert" style="margin:0;min-height:1.4em"></p>
+    </div>
+    <div class="df"><span></span><span class="row"><button type="button" class="btn" data-act="close">Cancelar</button><button type="submit" class="btn primary">Salvar nova senha</button></span></div>
+  </form>`;
+  $('#dlg').showModal(); setTimeout(() => $('#pw1').focus(), 0);
+}
+document.addEventListener('keydown', ev => {
+  if(ev.target.id === 'menu-name-in' && ev.key === 'Enter'){ ev.preventDefault(); const ok = document.querySelector('[data-act="menu-name-ok"]'); if(ok) ok.click(); }
+  if(ev.key === 'Escape' && $('#menupop') && !$('#menupop').hidden){ $('#menupop').hidden = true; $('#menubtn').setAttribute('aria-expanded', 'false'); $('#menubtn').focus(); }
+});
+
 document.addEventListener('submit', async ev => {
   if(ev.target.id !== 'passform') return;
   ev.preventDefault();
@@ -896,8 +957,9 @@ function render(){
   const st = $('#status');
   if(mode === 'loading') st.innerHTML = '<span class="dot"></span> <span class="st-txt">Conectando…</span>';
   else if(mode === 'local') st.innerHTML = '<span class="dot"></span> <span class="st-txt">Modo de teste</span>';
-  else if(sb) st.innerHTML = `<span class="dot live"></span> <span class="st-txt">${esc(sbUser && sbUser.email || 'Conectado')}</span> <button type="button" class="btn ghost" data-act="senha" style="padding:2px 6px;font-size:12px">Senha</button> <button type="button" class="btn ghost" data-act="logout" style="padding:2px 6px;font-size:12px">Sair</button>`;
+  else if(sb) st.innerHTML = `<span class="dot live"></span> <span class="st-txt">${esc(myName())}</span>`;
   else st.innerHTML = `<span class="dot live"></span> <span class="st-txt">${canWrite ? 'Sincronizado com a equipe' : 'Somente leitura'}</span>`;
+  $('#menuwrap').hidden = !(sb && sbUser);
 
   const bn = $('#banner');
   if(mode === 'local' && CFG) bn.innerHTML = '<div class="banner" style="background:#E10031;color:#fff"><b>Este app não está ligado ao banco.</b> Nada do que for feito aqui será salvo. Abra <b>painel-youth.vercel.app</b> e apague o ícone antigo da tela inicial.</div>';
@@ -1093,18 +1155,51 @@ function editBar(it){
 
 /* Versículo do dia: one verse about serving per calendar day, same for everyone on the same date. */
 const VERSOS = [
+  ['Josué 1:9', 'Não fui eu que ordenei a você? Seja forte e corajoso! Não se apavore nem desanime, pois o Senhor, o seu Deus, estará com você por onde você andar.'],
+  ['Isaías 41:10', 'Por isso não tema, pois estou com você; não tenha medo, pois sou o seu Deus. Eu o fortalecerei e o ajudarei; eu o segurarei com a minha mão direita vitoriosa.'],
+  ['Filipenses 4:13', 'Tudo posso naquele que me fortalece.'],
+  ['2 Timóteo 1:7', 'Pois Deus não nos deu espírito de covardia, mas de poder, de amor e de equilíbrio.'],
+  ['Isaías 40:31', 'Mas aqueles que esperam no Senhor renovam as suas forças. Voam alto como águias; correm e não ficam exaustos, andam e não se cansam.'],
+  ['Jeremias 29:11', 'Porque sou eu que conheço os planos que tenho para vocês, diz o Senhor, planos de fazê-los prosperar e não de causar dano, planos de dar a vocês esperança e um futuro.'],
+  ['Romanos 8:28', 'Sabemos que Deus age em todas as coisas para o bem daqueles que o amam, dos que foram chamados de acordo com o seu propósito.'],
+  ['Provérbios 3:5-6', 'Confie no Senhor de todo o seu coração e não se apoie em seu próprio entendimento; reconheça o Senhor em todos os seus caminhos, e ele endireitará as suas veredas.'],
+  ['Mateus 11:28', 'Venham a mim, todos os que estão cansados e sobrecarregados, e eu darei descanso a vocês.'],
+  ['Salmos 23:1', 'O Senhor é o meu pastor; de nada terei falta.'],
+  ['Deuteronômio 31:8', 'O próprio Senhor irá à sua frente e estará com você; ele nunca o deixará, nunca o abandonará. Não tenha medo! Não desanime!'],
+  ['1 Coríntios 16:13', 'Estejam vigilantes, mantenham-se firmes na fé, sejam corajosos, sejam fortes.'],
+  ['Salmos 46:1', 'Deus é o nosso refúgio e a nossa fortaleza, auxílio sempre presente na adversidade.'],
+  ['Filipenses 1:6', 'Estou convencido de que aquele que começou boa obra em vocês vai completá-la até o dia de Cristo Jesus.'],
+  ['2 Coríntios 12:9', 'A minha graça é suficiente para você, pois o meu poder se aperfeiçoa na fraqueza.'],
+  ['Mateus 28:20', 'E eu estarei sempre com vocês, até o fim dos tempos.'],
+  ['Salmos 37:5', 'Entregue o seu caminho ao Senhor; confie nele, e ele agirá.'],
+  ['Neemias 8:10', 'Não se entristeçam, porque a alegria do Senhor os fortalecerá.'],
+  ['Isaías 43:2', 'Quando você atravessar as águas, eu estarei com você; quando você atravessar os rios, eles não o encobrirão.'],
+  ['Romanos 15:13', 'Que o Deus da esperança os encha de toda alegria e paz, por sua confiança nele, para que vocês transbordem de esperança, pelo poder do Espírito Santo.'],
+  ['Salmos 121:1-2', 'Levanto os meus olhos para os montes e pergunto: De onde me vem o socorro? O meu socorro vem do Senhor, que fez os céus e a terra.'],
+  ['João 16:33', 'Neste mundo vocês terão aflições; contudo, tenham ânimo! Eu venci o mundo.'],
+  ['Hebreus 12:1-2', 'Corramos com perseverança a corrida que nos é proposta, tendo os olhos fitos em Jesus, autor e consumador da nossa fé.'],
+  ['Tiago 1:5', 'Se algum de vocês tem falta de sabedoria, peça-a a Deus, que a todos dá livremente, de boa vontade; e lhe será concedida.'],
+  ['Salmos 27:1', 'O Senhor é a minha luz e a minha salvação; de quem terei temor? O Senhor é o meu forte refúgio; de quem terei medo?'],
+  ['Lamentações 3:22-23', 'Graças ao grande amor do Senhor é que não somos consumidos, pois as suas misericórdias são inesgotáveis. Renovam-se cada manhã; grande é a sua fidelidade!'],
+  ['1 Pedro 5:7', 'Lancem sobre ele toda a sua ansiedade, porque ele tem cuidado de vocês.'],
+  ['Efésios 3:20', 'Àquele que é capaz de fazer infinitamente mais do que tudo o que pedimos ou pensamos, de acordo com o seu poder que atua em nós.'],
+  ['Salmos 16:8', 'Sempre tenho o Senhor diante de mim. Com ele à minha direita, não serei abalado.'],
+  ['Isaías 26:3', 'Tu, Senhor, guardarás em perfeita paz aquele cujo propósito está firme, porque em ti confia.'],
   ['Marcos 10:45', 'Pois nem mesmo o Filho do homem veio para ser servido, mas para servir e dar a sua vida em resgate por muitos.'],
+  ['1 Pedro 5:2-3', 'Pastoreiem o rebanho de Deus que está aos seus cuidados, não como dominadores dos que lhes foram confiados, mas como exemplos para o rebanho.'],
+  ['1 Pedro 5:4', 'Quando se manifestar o Supremo Pastor, vocês receberão a imperecível coroa da glória.'],
+  ['Atos 20:28', 'Cuidem de vocês mesmos e de todo o rebanho sobre o qual o Espírito Santo os colocou, para pastorearem a igreja de Deus.'],
+  ['João 13:14-15', 'Se eu, sendo Senhor e Mestre de vocês, lavei os seus pés, vocês também devem lavar os pés uns dos outros. Eu lhes dei o exemplo, para que vocês façam como lhes fiz.'],
   ['Colossenses 3:23', 'Tudo o que fizerem, façam de todo o coração, como para o Senhor, e não para os homens.'],
   ['1 Pedro 4:10', 'Cada um exerça o dom que recebeu para servir os outros, administrando fielmente a graça de Deus em suas múltiplas formas.'],
-  ['Gálatas 5:13', 'Irmãos, vocês foram chamados para a liberdade. Mas não usem a liberdade para dar ocasião à vontade da carne; ao contrário, sirvam uns aos outros mediante o amor.'],
+  ['Gálatas 5:13', 'Irmãos, vocês foram chamados para a liberdade. Sirvam uns aos outros mediante o amor.'],
   ['Josué 24:15', 'Eu e a minha família serviremos ao Senhor.'],
   ['Salmos 100:2', 'Sirvam ao Senhor com alegria; entrem na sua presença com cânticos alegres.'],
   ['Romanos 12:11', 'Nunca lhes falte o zelo; sejam fervorosos no espírito, sirvam ao Senhor.'],
-  ['João 13:14-15', 'Pois bem, se eu, sendo Senhor e Mestre de vocês, lavei os seus pés, vocês também devem lavar os pés uns dos outros. Eu lhes dei o exemplo, para que vocês façam como lhes fiz.'],
   ['Filipenses 2:3-4', 'Nada façam por ambição egoísta ou por vaidade, mas humildemente considerem os outros superiores a si mesmos. Cada um cuide, não somente dos seus interesses, mas também dos interesses dos outros.'],
   ['Mateus 20:26', 'Quem quiser tornar-se importante entre vocês deverá ser servo.'],
   ['Hebreus 6:10', 'Deus não é injusto; ele não se esquecerá do trabalho de vocês e do amor que demonstraram por ele, pois ajudaram os santos e continuam a ajudá-los.'],
-  ['1 Coríntios 15:58', 'Sejam sempre dedicados à obra do Senhor, pois vocês sabem que, no Senhor, o trabalho de vocês não será inútil.'],
+  ['1 Coríntios 15:58', 'Mantenham-se firmes, e que nada os abale. Sejam sempre dedicados à obra do Senhor, pois vocês sabem que, no Senhor, o trabalho de vocês não será inútil.'],
   ['Gálatas 6:9', 'E não nos cansemos de fazer o bem, pois no tempo próprio colheremos, se não desanimarmos.'],
   ['Efésios 2:10', 'Porque somos criação de Deus realizada em Cristo Jesus para fazermos boas obras, as quais Deus preparou antes para nós as praticarmos.'],
   ['Romanos 12:1', 'Rogo-lhes pelas misericórdias de Deus que se ofereçam em sacrifício vivo, santo e agradável a Deus; este é o culto racional de vocês.'],
@@ -1123,11 +1218,313 @@ const VERSOS = [
   ['Lucas 22:27', 'Mas eu estou entre vocês como quem serve.'],
   ['2 Timóteo 2:15', 'Procure apresentar-se a Deus aprovado, como obreiro que não tem do que se envergonhar e que maneja corretamente a palavra da verdade.'],
   ['Romanos 12:10', 'Dediquem-se uns aos outros com amor fraternal. Prefiram dar honra aos outros mais do que a si próprios.'],
-  ['Salmos 119:9', 'Como pode o jovem manter pura a sua conduta? Vivendo de acordo com a tua palavra.']
+  ['Salmos 119:9', 'Como pode o jovem manter pura a sua conduta? Vivendo de acordo com a tua palavra.'],
+  ['Salmos 119:105', 'A tua palavra é lâmpada que ilumina os meus passos e luz que clareia o meu caminho.'],
+  ['Josué 1:8', 'Não deixe de falar as palavras deste Livro da Lei e de meditar nelas de dia e de noite. Só então os seus caminhos prosperarão e você será bem-sucedido.'],
+  ['Salmos 1:3', 'É como árvore plantada à beira de águas correntes: dá fruto no tempo certo e suas folhas não murcham. Tudo o que ele faz prospera!'],
+  ['Provérbios 16:3', 'Consagre ao Senhor tudo o que você faz, e os seus planos serão bem-sucedidos.'],
+  ['Provérbios 16:9', 'Em seu coração o homem planeja o seu caminho, mas o Senhor determina os seus passos.'],
+  ['Provérbios 11:14', 'Sem diretrizes a nação cai; o que a salva é ter muitos conselheiros.'],
+  ['Provérbios 15:22', 'Os planos fracassam por falta de conselho, mas são bem-sucedidos quando há muitos conselheiros.'],
+  ['Provérbios 27:17', 'Assim como o ferro afia o ferro, o homem afia o seu companheiro.'],
+  ['Eclesiastes 4:9-10', 'É melhor ter companhia do que estar sozinho. Se um cair, o amigo pode ajudá-lo a levantar-se.'],
+  ['Eclesiastes 4:12', 'Um cordão de três dobras não se rompe com facilidade.'],
+  ['Salmos 133:1', 'Como é bom e agradável quando os irmãos convivem em união!'],
+  ['João 17:21', 'Para que todos sejam um, Pai, como tu estás em mim e eu em ti, para que o mundo creia que tu me enviaste.'],
+  ['Efésios 4:2-3', 'Sejam completamente humildes e dóceis, e sejam pacientes, suportando uns aos outros com amor. Façam todo o esforço para conservar a unidade do Espírito pelo vínculo da paz.'],
+  ['Efésios 4:11-12', 'Ele designou alguns para apóstolos, outros para profetas, outros para evangelistas, e outros para pastores e mestres, com o fim de preparar os santos para a obra do ministério.'],
+  ['Efésios 4:15', 'Seguindo a verdade em amor, cresçamos em tudo naquele que é a cabeça, Cristo.'],
+  ['Efésios 6:10', 'Finalmente, fortaleçam-se no Senhor e no seu forte poder.'],
+  ['Efésios 6:18', 'Orem no Espírito em todas as ocasiões, com toda oração e súplica; estejam atentos e perseverem na oração por todos os santos.'],
+  ['Filipenses 4:6-7', 'Não andem ansiosos por coisa alguma, mas em tudo, pela oração e súplicas, e com ação de graças, apresentem seus pedidos a Deus. E a paz de Deus guardará o coração e a mente de vocês em Cristo Jesus.'],
+  ['Filipenses 4:8', 'Tudo o que for verdadeiro, tudo o que for nobre, tudo o que for correto, tudo o que for puro, tudo o que for amável: pensem nessas coisas.'],
+  ['Filipenses 4:19', 'O meu Deus suprirá todas as necessidades de vocês, de acordo com as suas gloriosas riquezas em Cristo Jesus.'],
+  ['Filipenses 3:13-14', 'Esquecendo-me das coisas que ficaram para trás e avançando para as que estão adiante, prossigo para o alvo, a fim de ganhar o prêmio do chamado celestial de Deus em Cristo Jesus.'],
+  ['Filipenses 2:13', 'Pois é Deus quem efetua em vocês tanto o querer quanto o realizar, de acordo com a boa vontade dele.'],
+  ['Filipenses 2:5', 'Seja a atitude de vocês a mesma de Cristo Jesus.'],
+  ['Filipenses 1:21', 'Para mim o viver é Cristo e o morrer é lucro.'],
+  ['Colossenses 3:12', 'Revistam-se de profunda compaixão, bondade, humildade, mansidão e paciência.'],
+  ['Colossenses 3:14', 'Acima de tudo, porém, revistam-se do amor, que é o elo perfeito.'],
+  ['Colossenses 3:15', 'Que a paz de Cristo seja o juiz em seu coração. E sejam agradecidos.'],
+  ['Colossenses 4:2', 'Dediquem-se à oração, estejam alertas e sejam agradecidos.'],
+  ['Colossenses 4:6', 'O seu falar seja sempre agradável e temperado com sal.'],
+  ['1 Tessalonicenses 5:11', 'Por isso, exortem-se e edifiquem-se uns aos outros, como de fato vocês estão fazendo.'],
+  ['1 Tessalonicenses 5:16-18', 'Alegrem-se sempre. Orem continuamente. Deem graças em todas as circunstâncias, pois esta é a vontade de Deus para vocês em Cristo Jesus.'],
+  ['1 Tessalonicenses 5:24', 'Aquele que os chama é fiel, e fará isso.'],
+  ['2 Tessalonicenses 3:3', 'O Senhor é fiel; ele os fortalecerá e os guardará do Maligno.'],
+  ['2 Tessalonicenses 3:13', 'Quanto a vocês, irmãos, nunca se cansem de fazer o bem.'],
+  ['1 Timóteo 6:12', 'Combata o bom combate da fé. Tome posse da vida eterna, para a qual você foi chamado.'],
+  ['2 Timóteo 4:7', 'Combati o bom combate, terminei a corrida, guardei a fé.'],
+  ['2 Timóteo 2:1', 'Você, porém, meu filho, fortifique-se na graça que há em Cristo Jesus.'],
+  ['2 Timóteo 2:2', 'E as palavras que me ouviu dizer na presença de muitas testemunhas, confie-as a homens fiéis que sejam também capazes de ensiná-las a outros.'],
+  ['2 Timóteo 2:3', 'Suporte comigo os sofrimentos, como bom soldado de Cristo Jesus.'],
+  ['2 Timóteo 3:16-17', 'Toda a Escritura é inspirada por Deus e útil para o ensino, para que o homem de Deus seja apto e plenamente preparado para toda boa obra.'],
+  ['2 Timóteo 4:2', 'Pregue a palavra, esteja preparado a tempo e fora de tempo.'],
+  ['2 Timóteo 4:5', 'Seja moderado em tudo, suporte os sofrimentos, faça a obra de um evangelista, cumpra plenamente o seu ministério.'],
+  ['1 Timóteo 4:14', 'Não negligencie o dom que lhe foi dado.'],
+  ['1 Timóteo 4:16', 'Atente bem para a sua própria vida e para a doutrina, perseverando nesses deveres.'],
+  ['2 Timóteo 1:6', 'Torno a lembrar-lhe que mantenha viva a chama do dom de Deus que está em você.'],
+  ['Tito 2:7', 'Em tudo seja você mesmo um exemplo para eles, fazendo boas obras.'],
+  ['Hebreus 10:23', 'Apeguemo-nos com firmeza à esperança que professamos, pois aquele que prometeu é fiel.'],
+  ['Hebreus 10:24', 'Consideremo-nos uns aos outros para nos incentivarmos ao amor e às boas obras.'],
+  ['Hebreus 10:35', 'Por isso, não abram mão da confiança que vocês têm; ela será ricamente recompensada.'],
+  ['Hebreus 11:1', 'A fé é a certeza daquilo que esperamos e a prova das coisas que não vemos.'],
+  ['Hebreus 11:6', 'Sem fé é impossível agradar a Deus, pois quem dele se aproxima precisa crer que ele existe e que recompensa aqueles que o buscam.'],
+  ['Hebreus 13:5', 'Nunca o deixarei, nunca o abandonarei.'],
+  ['Hebreus 13:6', 'O Senhor é o meu ajudador, não temerei.'],
+  ['Hebreus 13:8', 'Jesus Cristo é o mesmo, ontem, hoje e para sempre.'],
+  ['Hebreus 4:16', 'Aproximemo-nos do trono da graça com toda a confiança, a fim de recebermos misericórdia e encontrarmos graça que nos ajude no momento da necessidade.'],
+  ['Hebreus 12:12', 'Portanto, fortaleçam as mãos enfraquecidas e os joelhos vacilantes.'],
+  ['Tiago 1:2-3', 'Considerem motivo de grande alegria o fato de passarem por diversas provações, pois vocês sabem que a prova da sua fé produz perseverança.'],
+  ['Tiago 1:12', 'Feliz é o homem que persevera na provação, porque depois de aprovado receberá a coroa da vida.'],
+  ['Tiago 1:22', 'Sejam praticantes da palavra, e não apenas ouvintes.'],
+  ['Tiago 4:8', 'Aproximem-se de Deus, e ele se aproximará de vocês.'],
+  ['Tiago 4:10', 'Humilhem-se diante do Senhor, e ele os exaltará.'],
+  ['Tiago 5:16', 'A oração de um justo é poderosa e eficaz.'],
+  ['1 Pedro 2:9', 'Vocês são geração eleita, sacerdócio real, nação santa, povo exclusivo de Deus, para anunciar as grandezas daquele que os chamou das trevas para a sua maravilhosa luz.'],
+  ['1 Pedro 3:15', 'Estejam sempre preparados para responder a qualquer que lhes pedir a razão da esperança que há em vocês.'],
+  ['1 Pedro 4:8', 'Sobretudo, amem-se sinceramente uns aos outros, porque o amor perdoa muitíssimos pecados.'],
+  ['1 Pedro 5:6', 'Humilhem-se debaixo da poderosa mão de Deus, para que ele os exalte no tempo devido.'],
+  ['1 Pedro 5:10', 'O Deus de toda a graça, depois de vocês terem sofrido durante pouco tempo, os restaurará, os confirmará, os fortalecerá e os porá sobre firmes alicerces.'],
+  ['2 Pedro 1:3', 'Seu divino poder nos deu tudo de que necessitamos para a vida e para a piedade.'],
+  ['1 João 4:4', 'Filhinhos, vocês são de Deus e os venceram, porque aquele que está em vocês é maior do que aquele que está no mundo.'],
+  ['1 João 4:18', 'No amor não há medo; pelo contrário, o perfeito amor expulsa o medo.'],
+  ['1 João 4:19', 'Nós amamos porque ele nos amou primeiro.'],
+  ['1 João 5:4', 'O que é nascido de Deus vence o mundo; e esta é a vitória que vence o mundo: a nossa fé.'],
+  ['1 João 3:18', 'Filhinhos, não amemos de palavra nem de boca, mas em ação e em verdade.'],
+  ['3 João 1:4', 'Não tenho alegria maior do que ouvir que meus filhos estão andando na verdade.'],
+  ['Judas 1:24', 'Àquele que é poderoso para impedi-los de cair e para apresentá-los diante da sua glória sem mácula e com grande alegria.'],
+  ['Apocalipse 3:8', 'Eis que coloquei diante de você uma porta aberta, que ninguém pode fechar.'],
+  ['Apocalipse 21:5', 'Eis que faço novas todas as coisas!'],
+  ['Apocalipse 2:10', 'Seja fiel até a morte, e eu lhe darei a coroa da vida.'],
+  ['Mateus 5:14', 'Vocês são a luz do mundo. Não se pode esconder uma cidade construída sobre um monte.'],
+  ['Mateus 6:33', 'Busquem, pois, em primeiro lugar o Reino de Deus e a sua justiça, e todas essas coisas lhes serão acrescentadas.'],
+  ['Mateus 6:34', 'Portanto, não se preocupem com o amanhã, pois o amanhã trará as suas próprias preocupações.'],
+  ['Mateus 7:7', 'Peçam, e lhes será dado; busquem, e encontrarão; batam, e a porta lhes será aberta.'],
+  ['Mateus 9:37-38', 'A colheita é grande, mas os trabalhadores são poucos. Peçam, pois, ao Senhor da colheita que envie trabalhadores para a sua colheita.'],
+  ['Mateus 11:29-30', 'Tomem sobre vocês o meu jugo e aprendam de mim, pois sou manso e humilde de coração. Pois o meu jugo é suave e o meu fardo é leve.'],
+  ['Mateus 17:20', 'Se vocês tiverem fé do tamanho de um grão de mostarda, nada lhes será impossível.'],
+  ['Mateus 18:20', 'Pois onde se reunirem dois ou três em meu nome, ali eu estou no meio deles.'],
+  ['Mateus 19:26', 'Para o homem é impossível, mas para Deus todas as coisas são possíveis.'],
+  ['Mateus 22:37-39', 'Ame o Senhor, o seu Deus, de todo o seu coração, de toda a sua alma e de todo o seu entendimento. Ame o seu próximo como a si mesmo.'],
+  ['Mateus 23:11', 'O maior entre vocês deverá ser servo.'],
+  ['Mateus 25:21', 'Muito bem, servo bom e fiel! Você foi fiel no pouco, eu o porei sobre o muito. Venha e participe da alegria do seu senhor!'],
+  ['Mateus 28:19', 'Portanto, vão e façam discípulos de todas as nações.'],
+  ['Marcos 9:23', 'Tudo é possível àquele que crê.'],
+  ['Marcos 9:35', 'Se alguém quiser ser o primeiro, será o último, e servo de todos.'],
+  ['Marcos 11:24', 'Tudo o que vocês pedirem em oração, creiam que já o receberam, e assim lhes sucederá.'],
+  ['Marcos 16:15', 'Vão pelo mundo todo e preguem o evangelho a todas as pessoas.'],
+  ['Lucas 1:37', 'Pois nada é impossível para Deus.'],
+  ['Lucas 6:31', 'Como vocês querem que os outros lhes façam, façam também vocês a eles.'],
+  ['Lucas 6:38', 'Deem, e lhes será dado: uma boa medida, calcada, sacudida e transbordante.'],
+  ['Lucas 9:23', 'Se alguém quiser acompanhar-me, negue-se a si mesmo, tome diariamente a sua cruz e siga-me.'],
+  ['Lucas 12:32', 'Não tenham medo, pequeno rebanho, pois foi do agrado do Pai dar-lhes o Reino.'],
+  ['Lucas 16:10', 'Quem é fiel no pouco, também é fiel no muito.'],
+  ['Lucas 18:1', 'Jesus contou aos seus discípulos uma parábola, para mostrar-lhes que eles deviam orar sempre e nunca desanimar.'],
+  ['Lucas 19:10', 'Pois o Filho do homem veio buscar e salvar o que estava perdido.'],
+  ['João 3:16', 'Porque Deus tanto amou o mundo que deu o seu Filho Unigênito, para que todo o que nele crer não pereça, mas tenha a vida eterna.'],
+  ['João 8:12', 'Eu sou a luz do mundo. Quem me segue nunca andará em trevas, mas terá a luz da vida.'],
+  ['João 8:32', 'E conhecerão a verdade, e a verdade os libertará.'],
+  ['João 10:10', 'Eu vim para que tenham vida, e a tenham plenamente.'],
+  ['João 10:11', 'Eu sou o bom pastor. O bom pastor dá a sua vida pelas ovelhas.'],
+  ['João 13:34-35', 'Amem-se uns aos outros. Como eu os amei, vocês devem amar-se uns aos outros. Com isso todos saberão que vocês são meus discípulos.'],
+  ['João 14:1', 'Não se perturbe o coração de vocês. Creiam em Deus; creiam também em mim.'],
+  ['João 14:6', 'Eu sou o caminho, a verdade e a vida.'],
+  ['João 14:12', 'Aquele que crê em mim fará também as obras que tenho realizado. Fará coisas ainda maiores do que estas.'],
+  ['João 14:27', 'Deixo-lhes a paz; a minha paz lhes dou. Não se perturbe o seu coração, nem tenham medo.'],
+  ['João 15:5', 'Eu sou a videira; vocês são os ramos. Se alguém permanecer em mim e eu nele, esse dará muito fruto; pois sem mim vocês não podem fazer coisa alguma.'],
+  ['João 15:13', 'Ninguém tem maior amor do que aquele que dá a sua vida pelos seus amigos.'],
+  ['João 15:16', 'Vocês não me escolheram, mas eu os escolhi para irem e darem fruto, fruto que permaneça.'],
+  ['João 20:21', 'Assim como o Pai me enviou, eu os envio.'],
+  ['João 21:17', 'Senhor, tu sabes todas as coisas e sabes que te amo. Disse-lhe Jesus: Cuide das minhas ovelhas.'],
+  ['Atos 1:8', 'Mas receberão poder quando o Espírito Santo descer sobre vocês, e serão minhas testemunhas.'],
+  ['Atos 2:42', 'Eles se dedicavam ao ensino dos apóstolos e à comunhão, ao partir do pão e às orações.'],
+  ['Atos 4:13', 'Vendo a coragem de Pedro e de João, reconheceram que eles haviam estado com Jesus.'],
+  ['Atos 4:31', 'Depois de orarem, tremeu o lugar em que estavam reunidos; todos ficaram cheios do Espírito Santo e anunciavam corajosamente a palavra de Deus.'],
+  ['Atos 13:22', 'Encontrei Davi, filho de Jessé, homem segundo o meu coração; ele fará tudo o que for da minha vontade.'],
+  ['Atos 20:24', 'Considero a minha vida de nenhum valor para mim mesmo, se tão somente puder terminar a corrida e completar o ministério que o Senhor Jesus me confiou.'],
+  ['Romanos 1:16', 'Não me envergonho do evangelho, porque é o poder de Deus para a salvação de todo aquele que crê.'],
+  ['Romanos 5:3-4', 'Também nos gloriamos nas tribulações, porque sabemos que a tribulação produz perseverança; a perseverança, um caráter aprovado; e o caráter aprovado, esperança.'],
+  ['Romanos 5:5', 'A esperança não nos decepciona, porque Deus derramou seu amor em nossos corações, por meio do Espírito Santo.'],
+  ['Romanos 5:8', 'Mas Deus demonstra seu amor por nós: Cristo morreu em nosso favor quando ainda éramos pecadores.'],
+  ['Romanos 8:1', 'Portanto, agora já não há condenação para os que estão em Cristo Jesus.'],
+  ['Romanos 8:31', 'Se Deus é por nós, quem será contra nós?'],
+  ['Romanos 8:37', 'Em todas estas coisas somos mais que vencedores, por meio daquele que nos amou.'],
+  ['Romanos 8:38-39', 'Nem morte nem vida, nem qualquer outra coisa na criação será capaz de nos separar do amor de Deus que está em Cristo Jesus, nosso Senhor.'],
+  ['Romanos 10:14', 'Como ouvirão, se não houver quem pregue?'],
+  ['Romanos 12:2', 'Não se amoldem ao padrão deste mundo, mas transformem-se pela renovação da sua mente.'],
+  ['Romanos 12:6', 'Temos diferentes dons, de acordo com a graça que nos foi dada.'],
+  ['Romanos 12:8', 'Se é liderar, que o faça com zelo; se é mostrar misericórdia, que o faça com alegria.'],
+  ['Romanos 12:12', 'Alegrem-se na esperança, sejam pacientes na tribulação, perseverem na oração.'],
+  ['Romanos 12:21', 'Não se deixem vencer pelo mal, mas vençam o mal com o bem.'],
+  ['Romanos 14:19', 'Esforcemo-nos em promover tudo quanto conduz à paz e à edificação mútua.'],
+  ['Romanos 15:5', 'O Deus que concede perseverança e ânimo dê a vocês um espírito de unidade.'],
+  ['Romanos 15:7', 'Aceitem-se uns aos outros, da mesma forma que Cristo os aceitou, a fim de que vocês glorifiquem a Deus.'],
+  ['1 Coríntios 1:27', 'Deus escolheu as coisas loucas do mundo para envergonhar os sábios.'],
+  ['1 Coríntios 2:9', 'Olho nenhum viu, ouvido nenhum ouviu, mente nenhuma imaginou o que Deus preparou para aqueles que o amam.'],
+  ['1 Coríntios 3:6', 'Eu plantei, Apolo regou, mas Deus é quem fez crescer.'],
+  ['1 Coríntios 3:9', 'Pois nós somos cooperadores de Deus; vocês são lavoura de Deus e edifício de Deus.'],
+  ['1 Coríntios 4:2', 'O que se requer destes encarregados é que sejam fiéis.'],
+  ['1 Coríntios 9:24', 'Corram de tal modo que alcancem o prêmio.'],
+  ['1 Coríntios 10:13', 'Deus é fiel; ele não permitirá que vocês sejam tentados além do que podem suportar.'],
+  ['1 Coríntios 11:1', 'Tornem-se meus imitadores, como eu o sou de Cristo.'],
+  ['1 Coríntios 12:12', 'Assim como o corpo é uma unidade, embora tenha muitos membros, assim também com respeito a Cristo.'],
+  ['1 Coríntios 12:27', 'Ora, vocês são o corpo de Cristo, e cada um de vocês, individualmente, é membro desse corpo.'],
+  ['1 Coríntios 13:4', 'O amor é paciente, o amor é bondoso. Não inveja, não se vangloria, não se orgulha.'],
+  ['1 Coríntios 13:7', 'Tudo sofre, tudo crê, tudo espera, tudo suporta.'],
+  ['1 Coríntios 13:13', 'Assim, permanecem agora estes três: a fé, a esperança e o amor. O maior deles, porém, é o amor.'],
+  ['1 Coríntios 14:40', 'Mas tudo deve ser feito com decência e ordem.'],
+  ['1 Coríntios 16:14', 'Façam tudo com amor.'],
+  ['2 Coríntios 3:5', 'Não que possamos reivindicar qualquer coisa com base em nossos próprios méritos, mas a nossa capacidade vem de Deus.'],
+  ['2 Coríntios 4:7', 'Temos, porém, esse tesouro em vasos de barro, para mostrar que este poder que a tudo excede provém de Deus, e não de nós.'],
+  ['2 Coríntios 4:8-9', 'De todos os lados somos pressionados, mas não desanimados; ficamos perplexos, mas não desesperados; somos abatidos, mas não destruídos.'],
+  ['2 Coríntios 4:16', 'Por isso não desanimamos. Embora exteriormente estejamos a desgastar-nos, interiormente estamos sendo renovados dia após dia.'],
+  ['2 Coríntios 4:18', 'Fixamos os olhos, não naquilo que se vê, mas no que não se vê.'],
+  ['2 Coríntios 5:7', 'Porque vivemos por fé, e não pelo que vemos.'],
+  ['2 Coríntios 5:17', 'Se alguém está em Cristo, é nova criação. As coisas antigas já passaram; eis que surgiram coisas novas!'],
+  ['2 Coríntios 5:20', 'Portanto, somos embaixadores de Cristo.'],
+  ['2 Coríntios 9:7', 'Cada um dê conforme determinou em seu coração, não com pesar ou por obrigação, pois Deus ama quem dá com alegria.'],
+  ['2 Coríntios 9:8', 'Deus é poderoso para fazer que lhes seja acrescentada toda a graça, para que em todas as coisas tenham sempre o necessário.'],
+  ['Gálatas 2:20', 'Fui crucificado com Cristo. Assim, já não sou eu quem vive, mas Cristo vive em mim.'],
+  ['Gálatas 5:22-23', 'O fruto do Espírito é amor, alegria, paz, paciência, amabilidade, bondade, fidelidade, mansidão e domínio próprio.'],
+  ['Gálatas 5:25', 'Se vivemos pelo Espírito, andemos também pelo Espírito.'],
+  ['Gálatas 6:2', 'Levem os fardos pesados uns dos outros e, assim, cumpram a lei de Cristo.'],
+  ['Gálatas 6:10', 'Enquanto temos oportunidade, façamos o bem a todos.'],
+  ['Efésios 1:18', 'Oro para que os olhos do coração de vocês sejam iluminados, a fim de que vocês conheçam a esperança para a qual ele os chamou.'],
+  ['Efésios 2:8', 'Pois vocês são salvos pela graça, por meio da fé, e isto não vem de vocês, é dom de Deus.'],
+  ['Efésios 3:16', 'Oro para que, com as suas gloriosas riquezas, ele os fortaleça no íntimo do seu ser com poder, por meio do seu Espírito.'],
+  ['Efésios 4:1', 'Rogo-lhes que vivam de maneira digna da vocação que receberam.'],
+  ['Efésios 4:29', 'Nenhuma palavra torpe saia da boca de vocês, mas apenas a que for útil para edificar os outros.'],
+  ['Efésios 4:32', 'Sejam bondosos e compassivos uns para com os outros, perdoando-se mutuamente, assim como Deus perdoou vocês em Cristo.'],
+  ['Efésios 5:15-16', 'Tenham cuidado com a maneira como vocês vivem; que não seja como insensatos, mas como sábios, aproveitando ao máximo cada oportunidade.'],
+  ['Efésios 6:13', 'Vistam toda a armadura de Deus, para que possam resistir no dia mau e permanecer inabaláveis.'],
+  ['Salmos 3:3', 'Mas tu, Senhor, és o escudo que me protege; és a minha glória e me fazes andar de cabeça erguida.'],
+  ['Salmos 4:8', 'Em paz me deito e logo adormeço, pois só tu, Senhor, me fazes viver em segurança.'],
+  ['Salmos 18:2', 'O Senhor é a minha rocha, a minha fortaleza e o meu libertador.'],
+  ['Salmos 18:29', 'Com o teu auxílio posso atacar uma tropa; com o meu Deus posso transpor muralhas.'],
+  ['Salmos 18:32', 'Ele é o Deus que me reveste de força e torna perfeito o meu caminho.'],
+  ['Salmos 19:14', 'Que as palavras da minha boca e a meditação do meu coração sejam agradáveis a ti, Senhor, minha Rocha e meu Resgatador!'],
+  ['Salmos 20:4', 'Que ele realize o desejo do seu coração e faça cumprir todos os seus planos.'],
+  ['Salmos 23:4', 'Mesmo quando eu andar por um vale de trevas e morte, não temerei perigo algum, pois tu estás comigo.'],
+  ['Salmos 25:4-5', 'Mostra-me, Senhor, os teus caminhos, ensina-me as tuas veredas; guia-me com a tua verdade e ensina-me.'],
+  ['Salmos 27:14', 'Espere no Senhor. Seja forte! Coragem! Espere no Senhor.'],
+  ['Salmos 28:7', 'O Senhor é a minha força e o meu escudo; nele o meu coração confia, e dele recebo ajuda.'],
+  ['Salmos 30:5', 'O choro pode persistir uma noite, mas de manhã irrompe a alegria.'],
+  ['Salmos 31:24', 'Sejam fortes e corajosos, todos vocês que esperam no Senhor!'],
+  ['Salmos 32:8', 'Eu o instruirei e o ensinarei no caminho que você deve seguir; eu o aconselharei e cuidarei de você.'],
+  ['Salmos 34:8', 'Provem, e vejam como o Senhor é bom. Como é feliz o homem que nele se refugia!'],
+  ['Salmos 34:18', 'O Senhor está perto dos que têm o coração quebrantado.'],
+  ['Salmos 37:4', 'Deleite-se no Senhor, e ele atenderá aos desejos do seu coração.'],
+  ['Salmos 37:23', 'O Senhor firma os passos de um homem, quando a conduta deste o agrada.'],
+  ['Salmos 40:1-2', 'Esperei com paciência pelo Senhor; ele se inclinou para mim e ouviu o meu grito de socorro. Pôs os meus pés sobre uma rocha.'],
+  ['Salmos 42:11', 'Por que você está assim tão triste, ó minha alma? Ponha a sua esperança em Deus!'],
+  ['Salmos 46:10', 'Parem de lutar! Saibam que eu sou Deus!'],
+  ['Salmos 51:10', 'Cria em mim um coração puro, ó Deus, e renova dentro de mim um espírito estável.'],
+  ['Salmos 55:22', 'Entregue suas preocupações ao Senhor, e ele o susterá.'],
+  ['Salmos 56:3', 'Mas eu, quando estiver com medo, confiarei em ti.'],
+  ['Salmos 62:1-2', 'Somente em Deus a minha alma encontra descanso; dele vem a minha salvação. Somente ele é a rocha que me salva.'],
+  ['Salmos 63:1', 'Ó Deus, tu és o meu Deus, eu te busco intensamente.'],
+  ['Salmos 73:26', 'O meu corpo e o meu coração poderão fraquejar, mas Deus é a força do meu coração e a minha herança para sempre.'],
+  ['Salmos 84:11', 'O Senhor Deus é sol e escudo; o Senhor concede favor e honra; não recusa nenhum bem aos que vivem com integridade.'],
+  ['Salmos 86:11', 'Ensina-me o teu caminho, Senhor, para que eu ande na tua verdade.'],
+  ['Salmos 90:12', 'Ensina-nos a contar os nossos dias para que o nosso coração alcance sabedoria.'],
+  ['Salmos 90:17', 'Esteja sobre nós a bondade do nosso Deus Soberano. Consolida, para nós, a obra de nossas mãos.'],
+  ['Salmos 91:1-2', 'Aquele que habita no abrigo do Altíssimo e descansa à sombra do Todo-poderoso pode dizer ao Senhor: Tu és o meu refúgio e a minha fortaleza.'],
+  ['Salmos 91:11', 'Porque a seus anjos ele dará ordens a seu respeito, para que o protejam em todos os seus caminhos.'],
+  ['Salmos 94:19', 'Quando a ansiedade já me dominava no íntimo, o teu consolo trouxe alívio à minha alma.'],
+  ['Salmos 103:2', 'Bendiga o Senhor a minha alma! Não esqueça nenhuma de suas bênçãos!'],
+  ['Salmos 118:24', 'Este é o dia em que o Senhor agiu; alegremo-nos e exultemos neste dia.'],
+  ['Salmos 119:11', 'Guardei no coração a tua palavra para não pecar contra ti.'],
+  ['Salmos 126:5', 'Aqueles que semeiam com lágrimas, com cantos de alegria colherão.'],
+  ['Salmos 127:1', 'Se não for o Senhor o construtor da casa, será inútil trabalhar na construção.'],
+  ['Salmos 138:8', 'O Senhor cumprirá o seu propósito para comigo!'],
+  ['Salmos 139:14', 'Eu te louvo porque me fizeste de modo especial e admirável.'],
+  ['Salmos 143:8', 'Faze-me ouvir do teu amor leal pela manhã, pois em ti confio. Mostra-me o caminho que devo seguir.'],
+  ['Salmos 145:18', 'O Senhor está perto de todos os que o invocam.'],
+  ['Salmos 147:3', 'Só ele cura os de coração quebrantado e cuida das suas feridas.'],
+  ['Provérbios 4:23', 'Acima de tudo, guarde o seu coração, pois dele depende toda a sua vida.'],
+  ['Provérbios 9:10', 'O temor do Senhor é o princípio da sabedoria.'],
+  ['Provérbios 11:25', 'O generoso prosperará; quem dá alívio aos outros, alívio receberá.'],
+  ['Provérbios 12:25', 'O coração ansioso deprime o homem, mas uma palavra bondosa o anima.'],
+  ['Provérbios 13:20', 'Aquele que anda com os sábios será cada vez mais sábio.'],
+  ['Provérbios 16:32', 'Melhor é o homem paciente do que o guerreiro; mais vale controlar o seu espírito do que conquistar uma cidade.'],
+  ['Provérbios 18:10', 'O nome do Senhor é uma torre forte; os justos correm para ela e estão seguros.'],
+  ['Provérbios 19:21', 'Muitos são os planos no coração do homem, mas o que prevalece é o propósito do Senhor.'],
+  ['Provérbios 22:6', 'Instrua a criança segundo os objetivos que você tem para ela, e mesmo com o passar dos anos não se desviará deles.'],
+  ['Provérbios 24:16', 'Ainda que o justo caia sete vezes, tornará a erguer-se.'],
+  ['Provérbios 29:18', 'Onde não há revelação divina, o povo se desvia.'],
+  ['Eclesiastes 3:1', 'Para tudo há uma ocasião certa; há um tempo certo para cada propósito debaixo do céu.'],
+  ['Eclesiastes 9:10', 'O que as suas mãos tiverem que fazer, que o façam com toda a sua força.'],
+  ['Isaías 9:6', 'Porque um menino nos nasceu, um filho nos foi dado, e ele será chamado Maravilhoso Conselheiro, Deus Poderoso, Pai Eterno, Príncipe da Paz.'],
+  ['Isaías 30:21', 'Quer você se volte para a direita quer para a esquerda, uma voz atrás de você lhe dirá: Este é o caminho; siga-o.'],
+  ['Isaías 40:29', 'Ele fortalece o cansado e dá grande vigor ao que está sem forças.'],
+  ['Isaías 43:1', 'Não tema, pois eu o resgatei; eu o chamei pelo nome; você é meu.'],
+  ['Isaías 43:18-19', 'Esqueçam o que se foi; não vivam no passado. Vejam, estou fazendo uma coisa nova!'],
+  ['Isaías 54:10', 'Embora os montes sejam sacudidos e as colinas sejam removidas, ainda assim a minha fidelidade para com você não será abalada.'],
+  ['Isaías 55:11', 'Assim também ocorre com a palavra que sai da minha boca: ela não voltará para mim vazia.'],
+  ['Isaías 58:11', 'O Senhor o guiará constantemente; satisfará os seus desejos numa terra ressequida.'],
+  ['Isaías 60:1', 'Levante-se, refulja! Porque chegou a sua luz, e a glória do Senhor raia sobre você.'],
+  ['Isaías 61:1', 'O Espírito do Soberano, o Senhor, está sobre mim, porque o Senhor ungiu-me para levar boas notícias aos pobres.'],
+  ['Jeremias 1:5', 'Antes de formá-lo no ventre eu o escolhi; antes de você nascer, eu o separei.'],
+  ['Jeremias 1:7-8', 'Não diga que é muito jovem. A todos a quem eu o enviar, você irá. Não tenha medo deles, pois eu estou com você.'],
+  ['Jeremias 17:7-8', 'Bendito é o homem cuja confiança está no Senhor. Ele será como uma árvore plantada junto às águas.'],
+  ['Jeremias 29:13', 'Vocês me procurarão e me acharão quando me procurarem de todo o coração.'],
+  ['Jeremias 32:27', 'Eu sou o Senhor, o Deus de toda a humanidade. Há alguma coisa difícil demais para mim?'],
+  ['Jeremias 33:3', 'Clame a mim e eu responderei e lhe direi coisas grandiosas e insondáveis que você não conhece.'],
+  ['Ezequiel 36:26', 'Darei a vocês um coração novo e porei um espírito novo em vocês.'],
+  ['Daniel 1:8', 'Daniel, contudo, decidiu não se tornar impuro.'],
+  ['Daniel 12:3', 'Aqueles que são sábios reluzirão como o fulgor do céu, e aqueles que conduzem muitos à justiça serão como as estrelas, para todo o sempre.'],
+  ['Joel 2:28', 'Derramarei do meu Espírito sobre todos os povos. Os seus filhos e as suas filhas profetizarão, os velhos terão sonhos, os jovens terão visões.'],
+  ['Miqueias 6:8', 'Ele mostrou a você o que é bom: pratique a justiça, ame a fidelidade e ande humildemente com o seu Deus.'],
+  ['Habacuque 3:19', 'O Senhor, o Soberano, é a minha força; ele faz os meus pés como os do cervo; faz-me andar em lugares altos.'],
+  ['Sofonias 3:17', 'O Senhor, o seu Deus, está em seu meio, poderoso para salvar. Ele se regozijará em você.'],
+  ['Ageu 2:4', 'Coragem! Ao trabalho! Porque eu estou com vocês, declara o Senhor dos Exércitos.'],
+  ['Zacarias 4:6', 'Não por força nem por violência, mas pelo meu Espírito, diz o Senhor dos Exércitos.'],
+  ['Zacarias 4:10', 'Pois quem despreza o dia das coisas pequenas?'],
+  ['Gênesis 12:2', 'Farei de você um grande povo, e o abençoarei. Tornarei famoso o seu nome, e você será uma bênção.'],
+  ['Gênesis 28:15', 'Estou com você e cuidarei de você, aonde quer que vá.'],
+  ['Gênesis 50:20', 'Vocês planejaram o mal contra mim, mas Deus o tornou em bem.'],
+  ['Êxodo 4:12', 'Agora, pois, vá; eu estarei com você, falando por sua boca, e lhe ensinarei o que dizer.'],
+  ['Êxodo 14:14', 'O Senhor lutará por vocês; tão somente acalmem-se.'],
+  ['Êxodo 18:21', 'Escolha dentre todo o povo homens capazes, tementes a Deus, dignos de confiança.'],
+  ['Êxodo 33:14', 'Eu mesmo o acompanharei, e lhe darei descanso.'],
+  ['Números 6:24-26', 'O Senhor te abençoe e te guarde; o Senhor faça resplandecer o seu rosto sobre ti e te conceda graça; o Senhor volte para ti o seu rosto e te dê paz.'],
+  ['Deuteronômio 31:6', 'Sejam fortes e corajosos. Não tenham medo nem fiquem apavorados, pois o Senhor, o seu Deus, vai com vocês.'],
+  ['Josué 1:5', 'Ninguém conseguirá resistir a você, todos os dias da sua vida. Assim como estive com Moisés, estarei com você.'],
+  ['Josué 3:5', 'Santifiquem-se, pois amanhã o Senhor fará maravilhas entre vocês.'],
+  ['Juízes 6:12', 'O Senhor está com você, poderoso guerreiro.'],
+  ['Juízes 6:14', 'Com a força que você tem, vá. Não sou eu quem o está enviando?'],
+  ['Rute 1:16', 'Aonde você for irei, onde você ficar ficarei! O seu povo será o meu povo e o seu Deus será o meu Deus.'],
+  ['1 Samuel 16:7', 'O Senhor não vê como o homem: o homem vê a aparência, mas o Senhor vê o coração.'],
+  ['1 Samuel 17:47', 'A batalha é do Senhor.'],
+  ['1 Samuel 30:6', 'Davi fortaleceu-se no Senhor, o seu Deus.'],
+  ['2 Samuel 22:31', 'Este é o Deus cujo caminho é perfeito; a palavra do Senhor é comprovadamente genuína.'],
+  ['1 Reis 3:9', 'Dá, pois, ao teu servo um coração cheio de discernimento para governar o teu povo.'],
+  ['1 Crônicas 16:11', 'Busquem o Senhor e a sua força; busquem sempre a sua face.'],
+  ['1 Crônicas 28:20', 'Seja forte e corajoso! Mãos ao trabalho! Não tenha medo nem desanime, pois Deus, o Senhor, o meu Deus, está com você.'],
+  ['2 Crônicas 7:14', 'Se o meu povo, que se chama pelo meu nome, se humilhar e orar, buscar a minha face, então eu ouvirei dos céus.'],
+  ['2 Crônicas 15:7', 'Mas sejam fortes e não desanimem, pois o trabalho de vocês será recompensado.'],
+  ['2 Crônicas 16:9', 'Os olhos do Senhor estão atentos sobre toda a terra para fortalecer aqueles que lhe dedicam totalmente o coração.'],
+  ['2 Crônicas 20:15', 'Não tenham medo nem fiquem desanimados. Pois a batalha não é de vocês, mas de Deus.'],
+  ['2 Crônicas 20:17', 'Tomem suas posições, permaneçam firmes e vejam o livramento que o Senhor lhes dará.'],
+  ['Esdras 10:4', 'Levante-se! Esta questão está em suas mãos, mas nós o apoiaremos. Tenha coragem e mãos à obra!'],
+  ['Neemias 2:20', 'O Deus dos céus fará que sejamos bem-sucedidos. Nós, os seus servos, começaremos a reconstrução.'],
+  ['Neemias 4:14', 'Não tenham medo deles. Lembrem-se de que o Senhor é grande e temível.'],
+  ['Neemias 6:3', 'Estou executando um grande projeto e não posso descer.'],
+  ['Ester 4:14', 'Quem sabe se não foi para um momento como este que você chegou à posição de rainha?'],
+  ['Jó 42:2', 'Sei que podes fazer todas as coisas; nenhum dos teus planos pode ser frustrado.'],
+  ['Salmos 37:7', 'Descanse no Senhor e aguarde por ele com paciência.'],
+  ['Salmos 46:5', 'Deus nela está! Não será abalada! Deus vem em seu auxílio desde o romper da manhã.'],
+  ['Salmos 92:12', 'Os justos florescerão como a palmeira, crescerão como o cedro do Líbano.'],
+  ['Salmos 115:1', 'Não a nós, Senhor, nenhuma glória para nós, mas sim ao teu nome, por teu amor e por tua fidelidade!'],
+  ['Isaías 41:13', 'Pois eu sou o Senhor, o seu Deus, que o segura pela mão direita e lhe diz: Não tema; eu o ajudarei.'],
+  ['Lucas 2:52', 'Jesus ia crescendo em sabedoria, estatura e graça diante de Deus e dos homens.'],
+  ['Filipenses 1:9', 'Esta é a minha oração: que o amor de vocês aumente cada vez mais em conhecimento e em toda a percepção.']
 ];
 function verseHtml(){
-  const day = Math.floor(parseD(todayStr()).getTime() / 864e5 + 0.5);
-  const [ref, txt] = VERSOS[((day % VERSOS.length) + VERSOS.length) % VERSOS.length];
+  // One verse per day of the year: 1 Jan = first verse, 31 Dec = last (29 Feb wraps to the first).
+  const d = parseD(todayStr()), doy = Math.round((d - new Date(d.getFullYear(), 0, 1)) / 864e5);
+  const [ref, txt] = VERSOS[doy % VERSOS.length];
   return `<section class="verse" aria-label="Versículo do dia">
     <div class="verse-top"><span class="eyebrow">Versículo do dia · ${esc(fmtD(todayStr()))}</span><span class="verse-star" aria-hidden="true">*</span></div>
     <blockquote>${esc(txt)}</blockquote>
@@ -2082,6 +2479,7 @@ async function cultoPdf(c){
 
 document.addEventListener('click', async ev => {
   if(!ev.target.closest('.bellwrap')) $('#bellpop').hidden = true;
+  if(!ev.target.closest('.menuwrap') && !$('#menupop').hidden){ $('#menupop').hidden = true; $('#menubtn').setAttribute('aria-expanded', 'false'); }
   if(!ev.target.closest('#mlist, #obs-text') && $('#mlist')) $('#mlist').hidden = true;
   if(!ev.target.closest('#chat-mlist, #chat-text') && $('#chat-mlist')) $('#chat-mlist').hidden = true;
   const b = ev.target.closest('[data-act]'); if(!b) return;
@@ -2096,20 +2494,7 @@ document.addEventListener('click', async ev => {
   else if(act === 'notif'){ $('#bellpop').hidden = true; openDetail(b.dataset.kind, b.dataset.id, 'obs'); }
   else if(act === 'pick'){ pickMention(b.dataset.name); }
   else if(act === 'backup-json' || act === 'backup-csv'){ b.disabled = true; await downloadBackup(act === 'backup-csv'); b.disabled = false; }
-  else if(act === 'senha'){
-    dlgMode = 'pass'; editing = null;
-    $('#dlg').innerHTML = `<form id="passform" novalidate>
-      <div class="dh"><h2>Trocar minha senha</h2><button type="button" class="x" data-act="close" aria-label="Fechar">×</button></div>
-      <div class="db">
-        <p class="hint-step">Conta: <b>${esc(sbUser && sbUser.email || '')}</b>. A senha precisa ter pelo menos 6 caracteres.</p>
-        <div class="fld full"><label for="pw1">Nova senha</label><input id="pw1" name="pw1" type="password" autocomplete="new-password" minlength="6" required></div>
-        <div class="fld full"><label for="pw2">Repita a nova senha</label><input id="pw2" name="pw2" type="password" autocomplete="new-password" minlength="6" required></div>
-        <p class="muted full" id="pw-msg" role="alert" style="margin:0;min-height:1.4em"></p>
-      </div>
-      <div class="df"><span></span><span class="row"><button type="button" class="btn" data-act="close">Cancelar</button><button type="submit" class="btn primary">Salvar nova senha</button></span></div>
-    </form>`;
-    $('#dlg').showModal(); setTimeout(() => $('#pw1').focus(), 0);
-  }
+  else if(act === 'senha'){ openSenha(); }
   else if(act === 'logout'){
     // Local sign-out never needs the network; then clear any leftover session keys so the reload lands on the login screen.
     b.disabled = true; b.textContent = 'Saindo…';
@@ -2130,18 +2515,22 @@ document.addEventListener('click', async ev => {
   }
   else if(act === 'chat-name-ok'){
     const v = ($('#chat-name-in').value || '').trim(); const box = b.closest('.chat-as');
-    if(v){
-      setMe(v);
-      // Save it for the whole team, so others can find this person in the @ list.
-      const {error} = await sb.rpc('definir_meu_nome', {novo: v});
-      const me = equipe.find(m => lower(m.email) === lower(sbUser.email));
-      if(!error && me) me.nome = v;
-      retrackPresence();
-      toast(error ? 'Nome salvo neste aparelho (falta rodar o 6-nomes-da-equipe.sql para a equipe ver)' : 'Nome salvo para a equipe');
-    }
+    if(v) await saveMyName(v);
     box.innerHTML = `Você aparece como <b id="chat-me">${esc(myName())}</b> · <button type="button" class="linkbtn" data-act="chat-name">trocar nome</button>`;
-    renderBell();
   }
+  else if(act === 'menu'){ const p = $('#menupop'); p.hidden = !p.hidden; b.setAttribute('aria-expanded', String(!p.hidden)); if(!p.hidden) renderMenu(); }
+  else if(act === 'menu-name'){
+    const row = b.closest('.mrow');
+    row.innerHTML = `<div class="fld" style="flex:1"><label for="menu-name-in">Seu nome na equipe</label><input id="menu-name-in" value="${esc(myName())}" maxlength="40" autocomplete="off"></div><button type="button" class="btn primary" data-act="menu-name-ok">Salvar</button>`;
+    $('#menu-name-in').focus(); $('#menu-name-in').select();
+  }
+  else if(act === 'menu-name-ok'){
+    const v = ($('#menu-name-in').value || '').trim();
+    if(!v){ toast('Escreva um nome.'); return; }
+    b.disabled = true; await saveMyName(v); renderMenu();
+  }
+  else if(act === 'menu-senha'){ $('#menupop').hidden = true; openSenha(); }
+  else if(act === 'menu-chat'){ $('#menupop').hidden = true; setFabHidden(false); openChat(); }
   else if(act === 'mdel'){
     if(!b.dataset.armed){ b.dataset.armed = '1'; b.textContent = 'confirmar?'; setTimeout(() => { if(b.isConnected){ delete b.dataset.armed; b.textContent = 'apagar'; } }, 4000); return; }
     const {error} = await sb.from('mensagens').delete().eq('id', b.dataset.id);
