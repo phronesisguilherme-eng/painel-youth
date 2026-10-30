@@ -259,6 +259,17 @@ header.top{background:var(--head-bg);color:var(--head-ink);border-bottom:0}
 .tile b{font-family:var(--f-display);font-weight:400;font-size:32px;line-height:1;margin:3px 0}
 .tile span{font-weight:700;opacity:.85}
 .tile.past{background:var(--line);color:var(--muted)}
+.tile.range{background:var(--accent);color:#fff;width:auto;min-width:62px;padding-inline:6px}
+.tile.range b{font-size:22px;white-space:nowrap;margin:5px 0}
+.tile.range.past{background:var(--line);color:var(--muted)}
+.dias{display:flex;flex-wrap:wrap;gap:6px;margin-top:8px}
+.dia{display:grid;gap:1px;border:1.5px solid var(--ink);border-radius:10px;padding:4px 10px;background:var(--surface);line-height:1.15;min-width:64px}
+.dia i{font-style:normal;font-family:var(--f-mono);font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:var(--accent)}
+.dia b{font-family:var(--f-display);font-weight:400;font-size:17px;text-transform:uppercase;letter-spacing:.02em}
+.dia em{font-style:normal;font-family:var(--f-mono);font-size:11px;color:var(--muted)}
+.dia.hoje{background:var(--accent);border-color:var(--accent);color:#fff}
+.dia.hoje i,.dia.hoje em{color:#fff}
+.dia.foi{opacity:.5}
 .eyebrow,.meta dt,.fld label,th{font-family:var(--f-mono);letter-spacing:.05em}
 .btn{border-radius:999px;border:2px solid var(--ink);background:transparent;font-weight:600}
 .btn:hover{background:var(--ink);color:var(--bg);border-color:var(--ink)}
@@ -1270,6 +1281,23 @@ function quando(it){
   if(multi) return `${diaCurto(it.data)}${it.hora ? ' ' + it.hora : ''} → ${diaCurto(fimDe(it))}${it.horaFim ? ' ' + it.horaFim : ''}`;
   return it.hora ? it.hora + (it.horaFim ? '–' + it.horaFim : '') : '';
 }
+// Date tile for an agenda item: a multi-day event shows its range ("13–15", "3 dias").
+function tileEv(it, past){
+  const fim = fimDe(it); if(fim === it.data) return tile(it.data, past);
+  const a = parseD(it.data), b = parseD(fim), n = daysUntil(fim) - daysUntil(it.data) + 1;
+  const mes = a.getMonth() === b.getMonth() ? MO[a.getMonth()] : MO[a.getMonth()] + '–' + MO[b.getMonth()];
+  return `<div class="tile range${past ? ' past' : ''}" aria-label="${esc(fmtD(it.data))} a ${esc(fmtD(fim))}"><span>${mes}</span><b>${a.getDate()}–${b.getDate()}</b><span>${n} dias</span></div>`;
+}
+// One chip per day of a multi-day event: "Dia 1 · sex 13 · 19:00", "Dia 2 · sáb 14", …
+function diasHtml(it){
+  const fim = fimDe(it); if(fim === it.data) return '';
+  const dias = []; for(let d = it.data; d <= fim && dias.length < 31; d = addDays(d, 1)) dias.push(d);
+  const t = todayStr();
+  return `<div class="dias">${dias.map((d, i) => { const dd = parseD(d), hora = it.diaTodo ? (i ? '' : 'dia todo') : i === 0 ? (it.hora ? 'início ' + it.hora : '') : i === dias.length - 1 ? (it.horaFim ? 'até ' + it.horaFim : '') : '';
+    return `<span class="dia${d === t ? ' hoje' : ''}${d < t ? ' foi' : ''}"><i>Dia ${i + 1}</i><b>${WD[dd.getDay()]} ${dd.getDate()}</b>${hora ? `<em>${esc(hora)}</em>` : ''}</span>`; }).join('')}</div>`;
+}
+// Card eyebrow: a multi-day event lists its days below the title, so here it only says how many.
+const quandoCard = it => { const q = fimDe(it) !== it.data ? (daysUntil(fimDe(it)) - daysUntil(it.data) + 1) + ' dias' : quando(it); return (q ? esc(q) + ' · ' : '') + relEv(it); };
 const quandoLongo = it => fimDe(it) !== it.data ? quando(it) : fmtD(it.data) + (quando(it) ? ' · ' + quando(it) : '');
 const relEv = it => { const t = todayStr(); return it.data < t && fimDe(it) >= t ? 'acontecendo agora' : rel(it.data); };
 function ajustaFim(rec){
@@ -1369,7 +1397,7 @@ function renderDetail(){
       : [['Tipo', it.tipo],['Horário', it.hora]];
     if(c) rows.push(['Dirigente', c.dirigente],['Preletor', c.preletor],['Ministro de louvor', c.louvor]);
     const filled = rows.filter(r => r[1]);
-    body = `${filled.length ? `<dl class="meta" style="margin-top:0">${filled.map(([k,v]) => `<div><dt>${k}</dt><dd>${esc(v)}</dd></div>`).join('')}</dl>` : '<p class="muted" style="margin:0">Nenhum responsável definido ainda.</p>'}
+    body = `${diasHtml(it) ? `<div style="margin-bottom:14px">${diasHtml(it)}</div>` : ''}${filled.length ? `<dl class="meta" style="margin-top:0">${filled.map(([k,v]) => `<div><dt>${k}</dt><dd>${esc(v)}</dd></div>`).join('')}</dl>` : '<p class="muted" style="margin:0">Nenhum responsável definido ainda.</p>'}
       ${ev && ev.descricao ? `<p style="margin:14px 0 0;white-space:pre-wrap">${esc(ev.descricao)}</p>` : ''}
       ${esq.length ? `<div class="sect-h" style="margin-top:18px"><h3>Equipes</h3></div><div class="roles">${esq.map(e => teamRow(e, false)).join('')}</div>` : ''}
       ${(tl => tl.length ? `<div class="sect-h" style="margin-top:18px"><h3>Tarefas deste evento</h3></div>${tl.map(todoRow).join('')}` : '')(state.tarefas.filter(x => x.eventoRef === ref).sort(taskSort))}
@@ -1381,7 +1409,7 @@ function renderDetail(){
   }
   const count = {ordem: c && (c.ordem||[]).length ? '✓' : '', escalas: esq.length || '', resp: '', obs: it.rec.observacoes ? '✓' : ''};
   dlg.innerHTML = `<div class="dwrap">
-    <div class="dh"><div class="item" style="align-items:center">${tile(it.data, fimDe(it) < todayStr())}<div class="body"><div class="eyebrow">${esc(it.tipo)} · ${esc(quandoLongo(it))}</div><h2>${esc(it.titulo)}</h2></div></div><button type="button" class="x" data-act="close" aria-label="Fechar">×</button></div>
+    <div class="dh"><div class="item" style="align-items:center">${tileEv(it, fimDe(it) < todayStr())}<div class="body"><div class="eyebrow">${esc(it.tipo)} · ${esc(quandoLongo(it))}</div><h2>${esc(it.titulo)}</h2></div></div><button type="button" class="x" data-act="close" aria-label="Fechar">×</button></div>
     ${it.cancelado ? `<div class="faixa-canc" role="status"><span class="faixa-txt">Evento cancelado</span>${it.rec.canceladoMotivo ? `<span class="faixa-motivo">${esc(it.rec.canceladoMotivo)}</span>` : ''}</div>` : ''}
     ${editBar(it)}
     <nav class="steps" aria-label="Seções do compromisso">${DTABS.map(([k,l]) => `<button type="button" data-act="dtab" data-tab="${k}" aria-current="${k === tb ? 'step' : 'false'}">${l}${count[k] ? ` <span>${count[k]}</span>` : ''}</button>`).join('')}</nav>
@@ -2311,9 +2339,10 @@ function addToCalendar(it, tipo){
 function homeEventCard(it, first){
   const c = it.culto, esq = escalasFor(it), key = `data-kind="${it.kind}" data-id="${esc(it.id)}"`;
   const pessoas = [c && c.preletor && 'Preletor: ' + esc(c.preletor), c && c.dirigente && 'Dirigente: ' + esc(c.dirigente), it.kind === 'eventos' && it.resp && 'Responsável: ' + esc(it.resp)].filter(Boolean);
-  return `<article class="card agenda-item${first ? ' next' : ''}${it.cancelado ? ' cancelado' : ''}" data-act="open" ${key}>${tarjaHtml(it)}<div class="item">${tile(it.data)}<div class="body">
-    <div class="row"><span class="chip">${esc(it.tipo)}</span><span class="eyebrow">${quando(it) ? esc(quando(it)) + ' · ' : ''}${relEv(it)}</span></div>
+  return `<article class="card agenda-item${first ? ' next' : ''}${it.cancelado ? ' cancelado' : ''}" data-act="open" ${key}>${tarjaHtml(it)}<div class="item">${tileEv(it)}<div class="body">
+    <div class="row"><span class="chip">${esc(it.tipo)}</span><span class="eyebrow">${quandoCard(it)}</span></div>
     <h3 style="margin-top:6px"><button class="linkish" data-act="open" ${key}>${esc(it.titulo)}</button></h3>
+    ${diasHtml(it)}
     ${it.kind === 'eventos' && c && c.tema ? `<div style="margin-top:2px">Tema: <b>${esc(c.tema)}</b></div>` : ''}
     ${it.local || pessoas.length ? `<div class="muted" style="margin-top:4px">${[it.local && 'Local: ' + esc(it.local), ...pessoas].filter(Boolean).join(' · ')}</div>` : ''}
     <div class="row" style="margin-top:10px">
@@ -2373,9 +2402,10 @@ const VIEWS = {
       if(m !== cur){ if(cur) out += '</div>'; out += `<div class="month">${m}</div><div class="stack">`; cur = m; }
       const nEsc = escalasFor(it).length, c = it.culto;
       const key = `data-kind="${it.kind}" data-id="${esc(it.id)}"`;
-      out += `<article class="card agenda-item${it.cancelado ? ' cancelado' : ''}" data-act="open" ${key}>${tarjaHtml(it)}<div class="item">${tile(it.data, !fut)}<div class="body">
-        <div class="row"><span class="chip">${esc(it.tipo)}</span><span class="eyebrow">${quando(it) ? esc(quando(it)) + ' · ' : ''}${relEv(it)}</span></div>
+      out += `<article class="card agenda-item${it.cancelado ? ' cancelado' : ''}" data-act="open" ${key}>${tarjaHtml(it)}<div class="item">${tileEv(it, !fut)}<div class="body">
+        <div class="row"><span class="chip">${esc(it.tipo)}</span><span class="eyebrow">${quandoCard(it)}</span></div>
         <h3 style="margin-top:6px"><button class="linkish" data-act="open" ${key}>${esc(it.titulo)}</button></h3>
+        ${diasHtml(it)}
         ${it.kind === 'eventos' && c && c.tema ? `<div style="margin-top:2px">Tema: <b>${esc(c.tema)}</b></div>` : ''}
         <div class="muted" style="margin-top:4px">${[it.local && 'Local: ' + esc(it.local), it.resp && (it.kind === 'cultos' ? 'Dirigente: ' : 'Responsável: ') + esc(it.resp)].filter(Boolean).join(' · ') || 'Sem responsável definido'}</div>
         <div class="row" style="margin-top:10px">
