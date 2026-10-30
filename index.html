@@ -217,6 +217,8 @@ dialog form{display:flex;flex-direction:column;max-height:calc(100vh - 32px)}
 .mlist{display:grid;gap:2px;border:1px solid var(--line);border-radius:8px;padding:6px;background:var(--surface);box-shadow:var(--shadow)}
 .mlist button{text-align:left;border:0;background:none;padding:7px 9px;border-radius:6px;cursor:pointer;font-weight:600}
 .mlist button:hover,.mlist button:focus-visible{background:var(--soft)}
+.mwrap{position:relative}
+.mlist.flut{position:absolute;z-index:6;width:max-content;min-width:170px;max-width:min(260px,100%);max-height:210px;overflow-y:auto}
 .mention{color:var(--accent);font-weight:700}
 /* ---- Youth Worship brand layer ---- */
 h3{font-family:var(--f-body)}
@@ -1330,8 +1332,8 @@ function renderDetail(){
     const marc = it.rec.marcados || [];
     body = canWrite
       ? `<form id="obsform" class="stack" novalidate>
-          <div class="fld"><label for="obs-text">Observações do evento</label><textarea id="obs-text" name="observacoes" style="min-height:200px" placeholder="Anote lembretes, pedidos e combinados. Digite @ para marcar alguém da equipe.">${esc(txt)}</textarea></div>
-          <div class="mlist" id="mlist" hidden></div>
+          <div class="fld mwrap"><label for="obs-text">Observações do evento</label><textarea id="obs-text" name="observacoes" style="min-height:200px" placeholder="Anote lembretes, pedidos e combinados. Digite @ para marcar alguém da equipe.">${esc(txt)}</textarea>
+            <div class="mlist flut" id="mlist" hidden></div></div>
           <div class="row" style="justify-content:space-between"><span class="muted" style="font-size:13px">${it.rec.obsEm ? 'Última alteração: ' + esc(fmtD(it.rec.obsEm.slice(0,10))) : 'Ainda sem observações.'}</span><button type="submit" class="btn primary">Salvar observações</button></div>
         </form>`
       : (txt ? `<p style="margin:0;white-space:pre-wrap;overflow-wrap:anywhere">${withMentions(txt, marc)}</p>` : '<p class="muted" style="margin:0">Nenhuma observação registrada.</p>');
@@ -2645,6 +2647,24 @@ function renderMentionList(ta){
     + (!sb && q.trim() && !exact ? `<button type="button" data-act="pick" data-name="${esc(q.trim())}">Marcar “${esc(q.trim())}”</button>` : '')
     || `<span class="muted" style="padding:6px 8px;font-size:13px">${sb ? (mentionPeople(ta).length ? 'Nenhum usuário com esse nome. Só quem tem login no app pode ser marcado.' : 'Ainda não há outros usuários cadastrados no app.') : 'Digite o nome de quem você quer marcar.'}</span>`;
   box.hidden = false;
+  if(box.classList.contains('flut')) placeAtCaret(ta, box);
+}
+// Floating @-list: placed just under the line being typed, starting at the caret (kept inside the field).
+function caretXY(ta){
+  const cs = getComputedStyle(ta), div = document.createElement('div');
+  ['boxSizing','width','paddingTop','paddingRight','paddingBottom','paddingLeft','borderTopWidth','borderRightWidth','borderBottomWidth','borderLeftWidth','borderStyle','fontFamily','fontSize','fontWeight','lineHeight','letterSpacing','wordSpacing','textTransform','textIndent','tabSize'].forEach(p => div.style[p] = cs[p]);
+  Object.assign(div.style, {position: 'absolute', visibility: 'hidden', whiteSpace: 'pre-wrap', overflowWrap: 'break-word', top: '0', left: '-9999px', overflow: 'hidden'});
+  div.textContent = ta.value.slice(0, ta.selectionStart);
+  const span = document.createElement('span'); span.textContent = ta.value.slice(ta.selectionStart, ta.selectionStart + 1) || '.';
+  div.appendChild(span); document.body.appendChild(div);
+  const r = {x: span.offsetLeft, y: span.offsetTop, h: parseFloat(cs.lineHeight) || parseFloat(cs.fontSize) * 1.5};
+  div.remove(); return r;
+}
+function placeAtCaret(ta, box){
+  const c = caretXY(ta), wrap = box.offsetParent || ta.parentElement;
+  const maxLeft = Math.max(0, wrap.clientWidth - box.offsetWidth);
+  box.style.left = Math.min(ta.offsetLeft + c.x, maxLeft) + 'px';
+  box.style.top = Math.min(ta.offsetTop + c.y - ta.scrollTop + c.h + 4, ta.offsetTop + ta.offsetHeight - 8) + 'px';
 }
 function pickMention(name){
   const ta = mentionTa && mentionTa.isConnected ? mentionTa : $('#obs-text'); if(!ta) return;
