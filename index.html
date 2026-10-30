@@ -308,6 +308,19 @@ dialog{border-radius:20px;border:3px solid var(--ink);box-shadow:8px 8px 0 var(-
 .ulist{list-style:none;margin:0;padding:0;display:grid;gap:8px}
 .urow{display:flex;gap:12px;align-items:center;background:var(--card);border-radius:14px;padding:12px 14px}
 .urow.editing{display:block}
+/* Evento cancelado: diagonal pink band on cards, caution-tape strip inside the event */
+.vh{position:absolute;width:1px;height:1px;overflow:hidden;clip-path:inset(50%);white-space:nowrap}
+.agenda-item.cancelado{position:relative;overflow:hidden}
+.agenda-item.cancelado .item{filter:grayscale(1);opacity:.55}
+.agenda-item.cancelado h3 .linkish{text-decoration:line-through;text-decoration-thickness:3px;text-decoration-color:var(--accent)}
+.tarja{position:absolute;top:26px;right:-46px;z-index:2;transform:rotate(32deg);background:var(--accent);color:#fff;font-family:var(--f-display);font-size:16px;letter-spacing:.12em;text-transform:uppercase;padding:5px 56px;border-top:2px solid #111;border-bottom:2px solid #111;box-shadow:0 3px 0 rgba(0,0,0,.18);pointer-events:none}
+.faixa-canc{display:flex;flex-wrap:wrap;align-items:center;gap:6px 12px;padding:10px 20px;background:repeating-linear-gradient(-45deg,#111 0 14px,#FFD004 14px 28px);flex:none}
+.faixa-txt{background:var(--accent);color:#fff;font-family:var(--f-display);font-size:18px;letter-spacing:.1em;text-transform:uppercase;padding:3px 12px;border:2px solid #111;transform:rotate(-1.5deg)}
+.faixa-motivo{background:#fff;color:#111;font-weight:600;font-size:13px;padding:3px 10px;border:2px solid #111;overflow-wrap:anywhere}
+.cal-ev.canc{border-left-color:#9A958F;text-decoration:line-through;opacity:.7}
+.cal-ev.canc b{color:var(--accent);text-decoration:none;display:inline-block}
+.cal-dots i.canc{background:#9A958F}
+@media (max-width:640px){.tarja{font-size:13px;top:20px;right:-50px}.faixa-canc{padding:10px 16px}}
 .uadm{justify-self:start;border:0;background:none;padding:2px 0;font:inherit;font-size:13px;font-weight:600;color:var(--accent);cursor:pointer;text-decoration:underline;text-underline-offset:3px}
 .tagbox{display:grid;gap:10px;background:var(--card);border-radius:12px;padding:12px 14px}
 .tagrow{display:flex;flex-wrap:wrap;gap:8px;align-items:center}
@@ -448,7 +461,7 @@ dialog{border-radius:20px;border:3px solid var(--ink);box-shadow:8px 8px 0 var(-
   .cr-who{grid-column:2;text-align:left;font-size:13px}
   .cr-who:empty{display:none}
   .cr-what b{font-size:14px}
-  .editbar:not(.open) > span{display:none}
+  .editbar:not(.open) > span.muted{display:none}
   .editbar:not(.open){padding:8px 16px;justify-content:flex-end}
   .editbar:not(.open) .btn{padding:5px 12px;font-size:13px}
 }
@@ -1245,9 +1258,9 @@ function prazoChip(t){
 /* Each agenda item is an event (with an optional linked culto) or a standalone culto. */
 function agendaItems(){
   return [
-    ...state.eventos.map(e => ({kind:'eventos', id:e.id, rec:e, data:e.data, hora:e.hora, titulo:e.titulo, tipo:e.tipo || 'Evento', local:e.local, resp:e.responsavel, culto:state.cultos.find(c => c.eventoId === e.id)})),
+    ...state.eventos.map(e => ({kind:'eventos', id:e.id, rec:e, data:e.data, hora:e.hora, titulo:e.titulo, tipo:e.tipo || 'Evento', local:e.local, resp:e.responsavel, cancelado:!!e.cancelado, culto:state.cultos.find(c => c.eventoId === e.id)})),
     ...state.cultos.filter(c => !c.eventoId || !state.eventos.some(e => e.id === c.eventoId))
-      .map(c => ({kind:'cultos', id:c.id, rec:c, data:c.data, hora:c.hora, titulo:c.nome || c.tema || 'Evento do Youth', tipo:c.tipo || 'Evento do Youth', local:'', resp:c.dirigente, culto:c}))
+      .map(c => ({kind:'cultos', id:c.id, rec:c, data:c.data, hora:c.hora, titulo:c.nome || c.tema || 'Evento do Youth', tipo:c.tipo || 'Evento do Youth', local:'', resp:c.dirigente, cancelado:!!c.cancelado, culto:c}))
   ];
 }
 const findItem = (kind, id) => agendaItems().find(i => i.kind === kind && i.id === id);
@@ -1348,14 +1361,15 @@ function renderDetail(){
       ${esq.length ? `<div class="sect-h" style="margin-top:18px"><h3>Equipes</h3></div><div class="roles">${esq.map(e => teamRow(e, false)).join('')}</div>` : ''}
       ${(tl => tl.length ? `<div class="sect-h" style="margin-top:18px"><h3>Tarefas deste evento</h3></div>${tl.map(todoRow).join('')}` : '')(state.tarefas.filter(x => x.eventoRef === ref).sort(taskSort))}
       <div class="row" style="margin-top:18px">${W(ev ? `<button class="btn primary" data-act="qopen">Editar informações</button>` : '')}${W(c ? `<button class="btn" data-act="edit" data-col="cultos" data-id="${esc(c.id)}">Editar dirigente e preletor</button>` : '')}</div>
-      <div class="addcal"><span class="eyebrow">Adicionar ao meu calendário</span><div class="row">
+      ${it.cancelado ? '' : `<div class="addcal"><span class="eyebrow">Adicionar ao meu calendário</span><div class="row">
         <button class="btn" data-act="addcal" data-tipo="ics" data-kind="${it.kind}" data-id="${esc(it.id)}">iPhone / Outlook</button>
         <button class="btn" data-act="addcal" data-tipo="google" data-kind="${it.kind}" data-id="${esc(it.id)}">Google Agenda</button>
-      </div></div>`;
+      </div></div>`}`;
   }
   const count = {ordem: c && (c.ordem||[]).length ? '✓' : '', escalas: esq.length || '', resp: '', obs: it.rec.observacoes ? '✓' : ''};
   dlg.innerHTML = `<div class="dwrap">
     <div class="dh"><div class="item" style="align-items:center">${tile(it.data, it.data < todayStr())}<div class="body"><div class="eyebrow">${esc(it.tipo)} · ${esc(fmtD(it.data))}${it.hora ? ' · ' + esc(it.hora) : ''}</div><h2>${esc(it.titulo)}</h2></div></div><button type="button" class="x" data-act="close" aria-label="Fechar">×</button></div>
+    ${it.cancelado ? `<div class="faixa-canc" role="status"><span class="faixa-txt">Evento cancelado</span>${it.rec.canceladoMotivo ? `<span class="faixa-motivo">${esc(it.rec.canceladoMotivo)}</span>` : ''}</div>` : ''}
     ${editBar(it)}
     <nav class="steps" aria-label="Seções do compromisso">${DTABS.map(([k,l]) => `<button type="button" data-act="dtab" data-tab="${k}" aria-current="${k === tb ? 'step' : 'false'}">${l}${count[k] ? ` <span>${count[k]}</span>` : ''}</button>`).join('')}</nav>
     <div class="dbody">${body}</div>
@@ -1368,7 +1382,9 @@ const qFields = it => it.kind === 'eventos'
   : FORMS.cultos.fields.filter(f => ['nome','tipo','data','hora'].includes(f[0]));
 function editBar(it){
   if(!canWrite) return '';
-  if(!detailCtx.editOpen) return `<div class="editbar"><span class="muted">${it.kind === 'eventos' ? 'Nome, tipo, data, local e responsável deste evento.' : 'Nome, tipo, data e horário deste evento.'}</span><button type="button" class="btn" data-act="qopen">Editar evento</button></div>`;
+  if(!detailCtx.editOpen) return `<div class="editbar"><span class="muted">${it.kind === 'eventos' ? 'Nome, tipo, data, local e responsável deste evento.' : 'Nome, tipo, data e horário deste evento.'}</span><span class="row">${it.cancelado
+      ? '<button type="button" class="btn" data-act="cancelar" data-val="0">Reativar evento</button>'
+      : '<button type="button" class="btn ghost" data-act="cancelar" data-val="1">Cancelar evento</button>'}<button type="button" class="btn" data-act="qopen">Editar evento</button></span></div>`;
   return `<form id="qedit" class="editbar open" novalidate>
     <div class="qgrid">${qFields(it).map(fd => fieldHtml(fd, it.rec[fd[0]] ?? '')).join('')}</div>
     <div class="row" style="justify-content:space-between">
@@ -1377,6 +1393,19 @@ function editBar(it){
     </div>
   </form>`;
 }
+
+/* Cancelled events stay on the agenda with a "Cancelado" band instead of being deleted. */
+async function setCancelado(on){
+  const it = findItem(detailCtx.kind, detailCtx.id); if(!it) return;
+  let motivo = '';
+  if(on){
+    motivo = prompt(`Cancelar “${it.titulo}”?\n\nSe quiser, escreva o motivo (aparece para a equipe):`, '');
+    if(motivo === null) return;
+  } else if(!confirm(`Reativar “${it.titulo}”? A tarja de cancelado sai da agenda.`)) return;
+  const rec = {...it.rec, cancelado: on, canceladoMotivo: on ? motivo.trim().slice(0, 140) : '', canceladoEm: on ? new Date().toISOString() : '', canceladoPor: on ? (sbUser ? sbUser.email : (getMe() || '')) : ''};
+  if(await save(it.kind, rec)){ toast(on ? 'Evento marcado como cancelado' : 'Evento reativado'); renderDetail(); render(); }
+}
+const tarjaHtml = it => it.cancelado ? '<span class="tarja" aria-hidden="true">Cancelado</span><span class="vh">Evento cancelado. </span>' : '';
 
 /* Versículo do dia: one verse about serving per calendar day, same for everyone on the same date. */
 const VERSOS = [
@@ -2210,8 +2239,8 @@ function calendarioHtml(){
     const iso = `${y}-${pad(m)}-${pad(d)}`, evs = byDay[iso] || [];
     cells += `<button type="button" class="cal-cell${iso === t ? ' hoje' : ''}${iso === calDia ? ' sel' : ''}${iso < t ? ' passado' : ''}" data-act="cal-dia" data-dia="${iso}" aria-label="${esc(dpLabel(iso))}: ${evs.length} evento${evs.length === 1 ? '' : 's'}">
       <span class="cal-n">${d}</span>
-      <span class="cal-evs">${evs.slice(0, 3).map(e => `<span class="cal-ev" title="${esc(e.titulo)}">${e.hora ? `<b>${esc(e.hora)}</b> ` : ''}${esc(e.titulo)}</span>`).join('')}${evs.length > 3 ? `<span class="cal-mais">+${evs.length - 3}</span>` : ''}</span>
-      ${evs.length ? `<span class="cal-dots" aria-hidden="true">${evs.slice(0, 4).map(() => '<i></i>').join('')}</span>` : ''}
+      <span class="cal-evs">${evs.slice(0, 3).map(e => `<span class="cal-ev${e.cancelado ? ' canc' : ''}" title="${esc(e.titulo)}${e.cancelado ? ' (cancelado)' : ''}">${e.cancelado ? '<b>CANCELADO</b> ' : e.hora ? `<b>${esc(e.hora)}</b> ` : ''}${esc(e.titulo)}</span>`).join('')}${evs.length > 3 ? `<span class="cal-mais">+${evs.length - 3}</span>` : ''}</span>
+      ${evs.length ? `<span class="cal-dots" aria-hidden="true">${evs.slice(0, 4).map(e => e.cancelado ? '<i class="canc"></i>' : '<i></i>').join('')}</span>` : ''}
     </button>`;
   }
   const doDia = byDate(agendaItems().filter(x => x.data === calDia));
@@ -2260,7 +2289,7 @@ function addToCalendar(it, tipo){
 function homeEventCard(it, first){
   const c = it.culto, esq = escalasFor(it), key = `data-kind="${it.kind}" data-id="${esc(it.id)}"`;
   const pessoas = [c && c.preletor && 'Preletor: ' + esc(c.preletor), c && c.dirigente && 'Dirigente: ' + esc(c.dirigente), it.kind === 'eventos' && it.resp && 'Responsável: ' + esc(it.resp)].filter(Boolean);
-  return `<article class="card agenda-item${first ? ' next' : ''}" data-act="open" ${key}><div class="item">${tile(it.data)}<div class="body">
+  return `<article class="card agenda-item${first ? ' next' : ''}${it.cancelado ? ' cancelado' : ''}" data-act="open" ${key}>${tarjaHtml(it)}<div class="item">${tile(it.data)}<div class="body">
     <div class="row"><span class="chip">${esc(it.tipo)}</span><span class="eyebrow">${it.hora ? esc(it.hora) + ' · ' : ''}${rel(it.data)}</span></div>
     <h3 style="margin-top:6px"><button class="linkish" data-act="open" ${key}>${esc(it.titulo)}</button></h3>
     ${it.kind === 'eventos' && c && c.tema ? `<div style="margin-top:2px">Tema: <b>${esc(c.tema)}</b></div>` : ''}
@@ -2322,7 +2351,7 @@ const VIEWS = {
       if(m !== cur){ if(cur) out += '</div>'; out += `<div class="month">${m}</div><div class="stack">`; cur = m; }
       const nEsc = escalasFor(it).length, c = it.culto;
       const key = `data-kind="${it.kind}" data-id="${esc(it.id)}"`;
-      out += `<article class="card agenda-item" data-act="open" ${key}><div class="item">${tile(it.data, !fut)}<div class="body">
+      out += `<article class="card agenda-item${it.cancelado ? ' cancelado' : ''}" data-act="open" ${key}>${tarjaHtml(it)}<div class="item">${tile(it.data, !fut)}<div class="body">
         <div class="row"><span class="chip">${esc(it.tipo)}</span><span class="eyebrow">${it.hora ? esc(it.hora) + ' · ' : ''}${rel(it.data)}</span></div>
         <h3 style="margin-top:6px"><button class="linkish" data-act="open" ${key}>${esc(it.titulo)}</button></h3>
         ${it.kind === 'eventos' && c && c.tema ? `<div style="margin-top:2px">Tema: <b>${esc(c.tema)}</b></div>` : ''}
@@ -2947,6 +2976,7 @@ document.addEventListener('click', async ev => {
   else if(act === 'u-new'){ adminEdit = '__novo'; renderEquipe(); setTimeout(() => { const f = $('#un-email'); if(f) f.focus(); }, 0); }
   else if(act === 'u-edit'){ adminEdit = b.dataset.email; renderEquipe(); }
   else if(act === 'u-papel'){ togglePapel(b.dataset.email); }
+  else if(act === 'cancelar'){ setCancelado(b.dataset.val === '1'); }
   else if(act === 'tagopen'){ detailCtx.tagOpen = !detailCtx.tagOpen; const box = $('#tagbox'); if(box) box.innerHTML = tagBoxHtml(); }
   else if(act === 'tagtoggle'){ setTag(b.dataset.name, b.getAttribute('aria-pressed') !== 'true'); }
   else if(act === 'untag'){ setTag(b.dataset.name, false); }
