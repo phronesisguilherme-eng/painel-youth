@@ -903,9 +903,9 @@ function renderOnline(){
   el.setAttribute('aria-label', 'Online agora: ' + online.map(p => p.nome).join(', '));
 }
 function abrirObsDoLink(){
-  const alvo = location.hash.match(/^#obs=(eventos|cultos):(.+)$/); if(!alvo) return;
+  const alvo = location.hash.match(/^#(obs|evento)=(eventos|cultos):(.+)$/); if(!alvo) return;
   history.replaceState(null, '', location.pathname + location.search);
-  tab = 'agenda'; render(); openDetail(alvo[1], decodeURIComponent(alvo[2]), 'obs');
+  tab = 'agenda'; render(); openDetail(alvo[2], decodeURIComponent(alvo[3]), alvo[1] === 'obs' ? 'obs' : 'resp');
 }
 const memberName = m => m.nome ||m.email.split('@')[0].replace(/^./, ch => ch.toUpperCase());
 async function startSupabase(user){
@@ -918,7 +918,7 @@ async function startSupabase(user){
   COLS.forEach(c => { state[c] = []; loaded[c] = true; });
   (data || []).forEach(r => { if(state[r.colecao]) state[r.colecao].push({...r.dados, id: r.id}); });
   render();
-  // Opened from a "você foi marcado" notification: #obs=eventos:<id> goes straight to that event's Observações.
+  // Opened from a notification: #obs=eventos:<id> goes to that event's Observações, #evento=… to its Informações.
   abrirObsDoLink();
   window.addEventListener('hashchange', abrirObsDoLink);
   sb.channel('registros-youth').on('postgres_changes', {event: '*', schema: 'public', table: 'registros'}, p => {
@@ -1399,10 +1399,10 @@ async function setCancelado(on){
   const it = findItem(detailCtx.kind, detailCtx.id); if(!it) return;
   let motivo = '';
   if(on){
-    motivo = prompt(`Cancelar “${it.titulo}”?\n\nSe quiser, escreva o motivo (aparece para a equipe):`, '');
+    motivo = prompt(`Cancelar “${it.titulo}”?\n\nA equipe recebe um aviso no celular. Se quiser, escreva o motivo:`, '');
     if(motivo === null) return;
-  } else if(!confirm(`Reativar “${it.titulo}”? A tarja de cancelado sai da agenda.`)) return;
-  const rec = {...it.rec, cancelado: on, canceladoMotivo: on ? motivo.trim().slice(0, 140) : '', canceladoEm: on ? new Date().toISOString() : '', canceladoPor: on ? (sbUser ? sbUser.email : (getMe() || '')) : ''};
+  } else if(!confirm(`Reativar “${it.titulo}”?\n\nA tarja de cancelado sai da agenda e a equipe recebe um aviso no celular.`)) return;
+  const rec = {...it.rec, cancelado: on, canceladoMotivo: on ? motivo.trim().slice(0, 140) : '', canceladoEm: on ? new Date().toISOString() : '', canceladoPor: on ? (sbUser ? sbUser.email : (getMe() || '')) : '', reativadoPor: on ? '' : (sbUser ? sbUser.email : (getMe() || ''))};
   if(await save(it.kind, rec)){ toast(on ? 'Evento marcado como cancelado' : 'Evento reativado'); renderDetail(); render(); }
 }
 const tarjaHtml = it => it.cancelado ? '<span class="tarja" aria-hidden="true">Cancelado</span><span class="vh">Evento cancelado. </span>' : '';
