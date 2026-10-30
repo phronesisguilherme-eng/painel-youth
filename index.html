@@ -595,6 +595,8 @@ dialog{border-radius:20px;border:3px solid var(--ink);box-shadow:8px 8px 0 var(-
 .titem input[type=text]:focus{outline:none;background:var(--surface)}
 .titem.ok input[type=text]{text-decoration:line-through;color:var(--muted)}
 .titem.add{border-bottom:0}
+.ti-resp{flex:none;max-width:130px;border:1px solid var(--line);border-radius:999px;padding:4px 8px;background:var(--surface);font-size:12px;font-weight:600;color:var(--ink)}
+@media (max-width:640px){.titem{flex-wrap:wrap}.titem input[type=text]{flex-basis:calc(100% - 60px)}.ti-resp{margin-left:28px;max-width:none}}
 .titem .plus{width:20px;text-align:center;font-weight:700;color:var(--accent)}
 .dp{display:grid;gap:6px;min-width:0}
 .dp-btn{display:flex;align-items:center;gap:8px;width:100%;border:1px solid var(--line);border-radius:8px;padding:9px 11px;background:var(--bg);cursor:pointer;text-align:left;color:var(--ink)}
@@ -1696,7 +1698,8 @@ function todoRow(x){
     </div></div>`;
 }
 /* Tasks belong to a real user (responsavelEmail) when the webapp knows the team; the old free-text name still shows. */
-const isMyTask = x => !!sbUser && (x.responsavelEmail ? lower(x.responsavelEmail) === lower(sbUser.email) : !!x.responsavel && norm(x.responsavel) === norm(myName()));
+const isMyTask = x => !!sbUser && ((x.responsavelEmail ? lower(x.responsavelEmail) === lower(sbUser.email) : !!x.responsavel && norm(x.responsavel) === norm(myName()))
+  || (x.itens || []).some(i => !i.ok && i.resp && lower(i.resp) === lower(sbUser.email)));
 function taskOwner(form, old){
   const sel = form.elements.responsavelEmail;
   if(!sel) return {responsavel: form.elements.responsavel.value.trim()};
@@ -1707,8 +1710,19 @@ function taskOwner(form, old){
   return out;
 }
 // Tasks someone else assigned to me, for the bell.
-const myAssigned = () => !sbUser ? [] : state.tarefas.filter(x => x.status !== 'feito' && x.responsavelEmail && lower(x.responsavelEmail) === lower(sbUser.email) && x.atribuidoPor && lower(x.atribuidoPor) !== lower(sbUser.email))
-  .map(x => ({task: x, key: 'task:' + x.id + ':' + (x.atribuidoEm || '')}));
+// Tasks someone else assigned to me, plus checklist items handed to me, for the bell.
+const myAssigned = () => {
+  if(!sbUser) return [];
+  const me = lower(sbUser.email), out = [];
+  state.tarefas.filter(x => x.status !== 'feito').forEach(x => {
+    if(x.responsavelEmail && lower(x.responsavelEmail) === me && x.atribuidoPor && lower(x.atribuidoPor) !== me)
+      out.push({task: x, key: 'task:' + x.id + ':' + (x.atribuidoEm || '')});
+    // Items I handed to myself (I was the last to edit the task) are not "new for me".
+    (x.itens || []).filter(i => !i.ok && i.resp && lower(i.resp) === me && lower(x.editadoPor) !== me)
+      .forEach(i => out.push({task: x, item: i, key: 'item:' + x.id + ':' + i.id + ':' + (i.atribuidoEm || '')}));
+  });
+  return out;
+};
 function tarefasView(){
   const mode = seg.tarefas || 'abertas';
   const minhasN = state.tarefas.filter(x => x.status !== 'feito' && isMyTask(x)).length;
@@ -1744,7 +1758,8 @@ function openTask(id, draft){
   const dlg = $('#dlg'); if(!dlg.open) dlg.showModal();
   if(!id) setTimeout(() => { const f = $('#t-titulo'); if(f) f.focus(); }, 0);
 }
-const itemRow = (i, n) => `<div class="titem${i.ok ? ' ok' : ''}"><input type="checkbox" id="ti-${n}-c" ${i.ok ? 'checked' : ''} aria-label="Item feito"${canWrite ? '' : ' disabled'}><input type="text" id="ti-${n}-t" value="${esc(i.t)}" aria-label="Item"${canWrite ? '' : ' readonly'}>${W(`<button type="button" class="x" data-act="titem-rm" aria-label="Remover item">×</button>`)}</div>`;
+// A checklist item keeps a stable id, and (in the webapp) the user it was handed to.
+const itemRow = (i, n) => `<div class="titem${i.ok ? ' ok' : ''}" data-id="${esc(i.id || uid())}" data-em="${esc(i.atribuidoEm || '')}"><input type="checkbox" id="ti-${n}-c" ${i.ok ? 'checked' : ''} aria-label="Item feito"${canWrite ? '' : ' disabled'}><input type="text" id="ti-${n}-t" value="${esc(i.t)}" aria-label="Item"${canWrite ? '' : ' readonly'}>${sb && equipe.length ? `<select class="ti-resp" id="ti-${n}-r" aria-label="Quem faz este item"${canWrite ? '' : ' disabled'}><option value="">Ninguém</option>${equipe.map(m => `<option value="${esc(m.email)}" ${lower(i.resp) === lower(m.email) ? 'selected' : ''}>${esc(memberName(m))}</option>`).join('')}</select>` : ''}${W(`<button type="button" class="x" data-act="titem-rm" aria-label="Remover item">×</button>`)}</div>`;
 function renderTask(){
   const d = taskCtx.draft, done = d.status === 'feito', itens = d.itens || [];
   const evs = byDate(agendaItems().filter(x => x.data && (x.data >= todayStr() || d.eventoRef === x.kind + ':' + x.id))).slice(0, 60);
@@ -1775,7 +1790,7 @@ function renderTask(){
         ${d.concluidaEm ? `<p class="muted" style="margin:0;font-size:13px">Concluída em ${esc(fmtD(d.concluidaEm.slice(0, 10)))}.</p>` : ''}
       </aside>
     </div></div>
-    ${canWrite ? `<div class="df"><span>${taskCtx.id ? '<button type="button" class="btn danger" data-act="tdel">Excluir</button>' : ''}</span><span class="row"><button type="button" class="btn" data-act="close">Cancelar</button><button type="submit" class="btn primary">Salvar tarefa</button></span></div>` : ''}
+    ${canWrite ? `<div class="df"><span>${taskCtx.id && (sb ? isAdmin : true) ? '<button type="button" class="btn danger" data-act="tdel">Excluir</button>' : ''}</span><span class="row"><button type="button" class="btn" data-act="close">Cancelar</button><button type="submit" class="btn primary">Salvar tarefa</button></span></div>` : ''}
   </form>`;
   updateProg();
 }
@@ -1808,17 +1823,27 @@ function readTask(form){
     titulo: form.elements.titulo.value.trim(), descricao: form.elements.descricao.value.trim(),
     status: form.elements.status.value, ...taskOwner(form, old),
     prazo: form.elements.prazo.value, prioridade: form.elements.prioridade.value, eventoRef: form.elements.eventoRef.value,
-    itens: [...form.querySelectorAll('#tlist .titem')].map(r => ({t: r.querySelector('input[type=text]').value.trim(), ok: r.querySelector('input[type=checkbox]').checked})).filter(i => i.t)};
-  const pending = $('#t-newitem') && $('#t-newitem').value.trim(); if(pending) rec.itens.push({t: pending, ok: false});
+    itens: [...form.querySelectorAll('#tlist .titem')].map(r => {
+      const sel = r.querySelector('.ti-resp'), resp = sel ? sel.value : '';
+      const antes = (old.itens || []).find(x => x.id === r.dataset.id) || {};
+      // A new assignee gets a fresh timestamp, which is what the bell and the push use to spot "new for you".
+      const atribuidoEm = resp && lower(resp) !== lower(antes.resp) ? new Date().toISOString() : (resp ? (antes.atribuidoEm || r.dataset.em || '') : '');
+      return {id: r.dataset.id, t: r.querySelector('input[type=text]').value.trim(), ok: r.querySelector('input[type=checkbox]').checked, resp, atribuidoEm};
+    }).filter(i => i.t)};
+  const pending = $('#t-newitem') && $('#t-newitem').value.trim(); if(pending) rec.itens.push({id: uid(), t: pending, ok: false, resp: '', atribuidoEm: ''});
+  // With a checklist, the checklist decides: all items done = Feito; otherwise it cannot be Feito.
   if(rec.itens.length && rec.itens.every(i => i.ok)) rec.status = 'feito';
+  else if(rec.itens.length && rec.status === 'feito') rec.status = 'fazendo';
+  if(sbUser) rec.editadoPor = sbUser.email;
   rec.concluidaEm = rec.status === 'feito' ? (old.status === 'feito' && old.concluidaEm ? old.concluidaEm : new Date().toISOString()) : '';
   if(!taskCtx.id) rec.criadoEm = new Date().toISOString();
   return rec;
 }
 async function toggleTask(id){
   const r = state.tarefas.find(x => x.id === id); if(!r) return;
+  if((r.itens || []).length){ toast('Esta tarefa tem checklist: ela é concluída sozinha quando todos os itens forem marcados.'); openTask(id); return; }
   const feito = r.status !== 'feito';
-  if(await save('tarefas', {...r, status: feito ? 'feito' : 'afazer', concluidaEm: feito ? new Date().toISOString() : ''})) toast(feito ? 'Tarefa concluída' : 'Tarefa reaberta');
+  if(await save('tarefas', {...r, status: feito ? 'feito' : 'afazer', concluidaEm: feito ? new Date().toISOString() : '', editadoPor: sbUser ? sbUser.email : ''})) toast(feito ? 'Tarefa concluída' : 'Tarefa reaberta');
 }
 document.addEventListener('submit', async ev => {
   if(ev.target.id === 'tquick'){
@@ -1838,7 +1863,14 @@ document.addEventListener('submit', async ev => {
 });
 document.addEventListener('keydown', ev => { if(ev.target.id === 't-newitem' && ev.key === 'Enter'){ ev.preventDefault(); addChecklistItem(); } });
 document.addEventListener('change', ev => {
-  if(ev.target.closest && ev.target.closest('#tlist')){ updateProg(); if(ev.target.type === 'checkbox') syncStatusFromChecklist(); }
+  if(ev.target.closest && ev.target.closest('#tlist')){
+    updateProg();
+    if(ev.target.type === 'checkbox'){
+      syncStatusFromChecklist();
+      // Ticking an item of a saved task is kept right away, so the task moves to Concluídas on its own.
+      if(taskCtx && taskCtx.id && canWrite && $('#tform')) save('tarefas', readTask($('#tform'))).then(ok => { if(ok){ const t = state.tarefas.find(x => x.id === taskCtx.id); if(t && t.status === 'feito'){ toast('Checklist completo: tarefa concluída'); $('#dlg').close(); } } });
+    }
+  }
   if(ev.target.id === 't-status'){ const c = $('#dlg .check.big'); if(c) c.classList.toggle('on', ev.target.value === 'feito'); }
 });
 
@@ -2464,9 +2496,9 @@ function renderBell(){
           <span style="font-size:13px;overflow-wrap:anywhere">${esc((m.it.rec.observacoes || '').slice(0, 110))}${(m.it.rec.observacoes || '').length > 110 ? '…' : ''}</span>
         </button>`).join('')}`
       : (chatList.length || taskList.length) ? '' : '<p class="muted" style="margin:0;font-size:14px">Nenhuma marcação para você ainda.</p>'}
-    ${taskList.length ? `<div class="eyebrow">Tarefas para você</div>${taskList.map(m => { const novo = !seen.includes(m.key); return `<button type="button" class="notif ${novo ? 'unread' : ''}" data-act="notif-task" data-id="${esc(m.task.id)}">
-        <span class="row" style="justify-content:space-between"><b>${esc(m.task.titulo || 'Tarefa')}</b>${novo ? '<span class="chip ok">Nova</span>' : ''}</span>
-        <span class="muted mono">${m.task.prazo ? 'Prazo: ' + esc(fmtD(m.task.prazo)) : 'Sem prazo'}</span>
+    ${taskList.length ? `<div class="eyebrow">Tarefas para você</div>${taskList.map(m => { const novo = !seen.includes(m.key); return `<button type="button" class="notif ${novo ? 'unread' : ''}" data-act="notif-task" data-id="${esc(m.task.id)}" data-key="${esc(m.key)}">
+        <span class="row" style="justify-content:space-between"><b>${esc(m.item ? '☐ ' + m.item.t : (m.task.titulo || 'Tarefa'))}</b>${novo ? '<span class="chip ok">Nova</span>' : ''}</span>
+        <span class="muted mono">${m.item ? 'Item da tarefa: ' + esc(m.task.titulo || '') : m.task.prazo ? 'Prazo: ' + esc(fmtD(m.task.prazo)) : 'Sem prazo'}</span>
       </button>`; }).join('')}` : ''}
     ${chatList.length ? `<div class="eyebrow">No chat da equipe</div>${chatList.slice(-8).reverse().map(m => { const novo = !seen.includes(m.key); return `<button type="button" class="notif ${novo ? 'unread' : ''}" data-act="notif-chat">
         <span class="row" style="justify-content:space-between"><b>${esc(m.msg.autor_nome || m.msg.autor_email.split('@')[0])}</b>${novo ? '<span class="chip ok">Nova</span>' : ''}</span>
@@ -2697,7 +2729,7 @@ document.addEventListener('click', async ev => {
   else if(act === 'menu-senha'){ $('#menupop').hidden = true; openSenha(); }
   else if(act === 'notif-task'){
     $('#bellpop').hidden = true;
-    const m = myAssigned().find(x => x.task.id === b.dataset.id); if(m){ markSeen(m.key); renderBell(); }
+    markSeen(b.dataset.key); renderBell();
     openTask(b.dataset.id);
   }
   else if(act === 'menu-equipe'){ $('#menupop').hidden = true; openEquipe(); }
@@ -2734,7 +2766,10 @@ document.addEventListener('click', async ev => {
   }
   else if(act === 'topen'){ openTask(b.dataset.id); }
   else if(act === 'tcheck'){ b.disabled = true; await toggleTask(b.dataset.id); }
-  else if(act === 'tdcheck'){ const s = $('#t-status'); s.value = s.value === 'feito' ? 'afazer' : 'feito'; b.classList.toggle('on', s.value === 'feito'); }
+  else if(act === 'tdcheck'){
+    if(document.querySelectorAll('#tlist .titem').length){ toast('Marque os itens do checklist: a tarefa é concluída quando todos estiverem feitos.'); return; }
+    const s = $('#t-status'); s.value = s.value === 'feito' ? 'afazer' : 'feito'; b.classList.toggle('on', s.value === 'feito');
+  }
   else if(act === 'titem-rm'){ b.closest('.titem').remove(); updateProg(); syncStatusFromChecklist(); }
   else if(act === 'tdel'){
     if(!b.dataset.armed){ b.dataset.armed = '1'; b.textContent = 'Clique de novo para excluir'; setTimeout(() => { if(b.isConnected){ delete b.dataset.armed; b.textContent = 'Excluir'; } }, 4000); return; }
