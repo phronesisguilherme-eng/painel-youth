@@ -2344,7 +2344,6 @@ function homeEventCard(it, first){
   return `<article class="card agenda-item${first ? ' next' : ''}${it.cancelado ? ' cancelado' : ''}" data-act="open" ${key}>${tarjaHtml(it)}<div class="item">${tileEv(it)}<div class="body">
     <div class="row"><span class="chip">${esc(it.tipo)}</span><span class="eyebrow">${quandoCard(it)}</span></div>
     <h3 style="margin-top:6px"><button class="linkish" data-act="open" ${key}>${esc(it.titulo)}</button></h3>
-    ${diasHtml(it)}
     ${it.kind === 'eventos' && c && c.tema ? `<div style="margin-top:2px">Tema: <b>${esc(c.tema)}</b></div>` : ''}
     ${it.local || pessoas.length ? `<div class="muted" style="margin-top:4px">${[it.local && 'Local: ' + esc(it.local), ...pessoas].filter(Boolean).join(' · ')}</div>` : ''}
     <div class="row" style="margin-top:10px">
@@ -2407,7 +2406,6 @@ const VIEWS = {
       out += `<article class="card agenda-item${it.cancelado ? ' cancelado' : ''}" data-act="open" ${key}>${tarjaHtml(it)}<div class="item">${tileEv(it, !fut)}<div class="body">
         <div class="row"><span class="chip">${esc(it.tipo)}</span><span class="eyebrow">${quandoCard(it)}</span></div>
         <h3 style="margin-top:6px"><button class="linkish" data-act="open" ${key}>${esc(it.titulo)}</button></h3>
-        ${diasHtml(it)}
         ${it.kind === 'eventos' && c && c.tema ? `<div style="margin-top:2px">Tema: <b>${esc(c.tema)}</b></div>` : ''}
         <div class="muted" style="margin-top:4px">${[it.local && 'Local: ' + esc(it.local), it.resp && (it.kind === 'cultos' ? 'Dirigente: ' : 'Responsável: ') + esc(it.resp)].filter(Boolean).join(' · ') || 'Sem responsável definido'}</div>
         <div class="row" style="margin-top:10px">
