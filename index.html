@@ -520,6 +520,7 @@ dialog{border-radius:20px;border:3px solid var(--ink);box-shadow:8px 8px 0 var(-
 .folder-ico svg{width:100%;height:100%}
 .folder-name{font-family:var(--f-display);font-weight:400;text-transform:uppercase;font-size:22px;letter-spacing:.02em;line-height:1.05}
 .folder-meta{color:var(--muted);font-size:12px}
+.folder[data-pasta="tutorial"]{grid-column:1/-1}
 .crumbs{display:grid;gap:4px;justify-items:start;min-width:0}
 .crumbs .btn{padding:4px 2px}
 .crumbs h2{display:flex;align-items:center;gap:10px}
@@ -2030,6 +2031,7 @@ document.addEventListener('change', ev => {
    Files live in the Supabase Storage bucket "arquivos" (webapp only); each file also has a row in
    the "arquivos" collection with its name, folder, size and storage path. */
 const PASTAS = [
+  ['tutorial', 'Tutorial do app', 'var(--ink)'],
   ['manuais', 'Manuais', '#FE003E'],
   ['orcamentos', 'Modelos de orçamento', '#FFD004'],
   ['workbooks', 'Workbooks', '#5A11E7'],
@@ -2063,7 +2065,7 @@ function arquivosView(){
       </button>`;
     }).join('')}</div>`;
   }
-  const [k, nome, cor] = PASTAS.find(p => p[0] === pastaAberta) || PASTAS[3];
+  const [k, nome, cor] = PASTAS.find(p => p[0] === pastaAberta) || PASTAS.find(p => p[0] === 'diversos');
   const list = files.filter(f => f.pasta === k).sort((a, b) => String(a.nome).localeCompare(String(b.nome), 'pt'));
   return `<div class="bar"><div class="crumbs"><button type="button" class="btn ghost" data-act="pasta" data-pasta="">‹ Arquivos</button><h2 style="--fc:${cor}"><span class="crumb-dot"></span>${esc(nome)}</h2></div>
     ${A(`<label class="btn primary upl" for="upl-input">+ Enviar arquivos</label><input type="file" id="upl-input" multiple hidden>`)}</div>
