@@ -441,6 +441,45 @@ dialog{border-radius:20px;border:3px solid var(--ink);box-shadow:8px 8px 0 var(-
   .editbar:not(.open) .btn{padding:5px 12px;font-size:13px}
 }
 
+/* Histórico */
+.hist-sub{margin:-6px 0 6px}
+.hist{list-style:none;margin:0;padding:0;display:grid;gap:6px}
+.hrow{display:flex;gap:12px;align-items:flex-start;background:var(--card);border-radius:12px;padding:10px 14px;border-left:4px solid var(--hc)}
+.hdot{width:10px;height:10px;border-radius:50%;background:var(--hc);margin-top:6px;flex:none}
+.hbody{flex:1;min-width:0;display:grid;gap:2px;overflow-wrap:anywhere}
+.hdet{font-size:13px}
+.htime{font-size:12px;flex:none}
+
+/* Calendário */
+.cal{background:var(--card);border-radius:18px;padding:14px}
+.cal-head{display:flex;align-items:center;gap:6px;margin-bottom:10px}
+.cal-head h3{font-family:var(--f-display);font-weight:400;text-transform:uppercase;font-size:24px;letter-spacing:.02em;flex:1;text-align:center}
+.cal-head .btn.ghost{font-size:22px;padding:2px 12px;text-decoration:none}
+.cal-grid{display:grid;grid-template-columns:repeat(7,minmax(0,1fr));gap:4px}
+.cal-wd{font-family:var(--f-mono);font-size:11px;font-weight:700;text-transform:uppercase;color:var(--muted);text-align:center;padding:4px 0}
+.cal-cell{min-height:92px;background:var(--surface);border:2px solid transparent;border-radius:10px;padding:5px;display:flex;flex-direction:column;gap:3px;text-align:left;cursor:pointer;color:var(--ink);min-width:0;font:inherit}
+.cal-cell.vazio{background:transparent;cursor:default}
+.cal-cell:hover{border-color:var(--line)}
+.cal-cell.passado{opacity:.6}
+.cal-cell.hoje .cal-n{background:var(--accent);color:#fff}
+.cal-cell.sel{border-color:var(--ink)}
+.cal-n{font-family:var(--f-mono);font-weight:700;font-size:12px;width:24px;height:24px;border-radius:50%;display:grid;place-items:center}
+.cal-evs{display:grid;gap:2px;min-width:0}
+.cal-ev{font-size:11px;line-height:1.25;background:var(--soft);border-left:3px solid var(--accent);border-radius:4px;padding:2px 4px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.cal-ev b{font-family:var(--f-mono);font-size:10px}
+.cal-mais{font-size:11px;color:var(--muted);font-weight:600}
+.cal-dots{display:none;gap:3px;justify-content:center;margin-top:auto}
+.cal-dots i{width:6px;height:6px;border-radius:50%;background:var(--accent)}
+.addcal{margin-top:18px;padding-top:14px;border-top:1px dashed var(--line);display:grid;gap:8px}
+@media (max-width:640px){
+  .cal{padding:10px;border-radius:14px}
+  .cal-grid{gap:3px}
+  .cal-cell{min-height:52px;padding:4px 2px;align-items:center}
+  .cal-evs{display:none}
+  .cal-dots{display:flex}
+  .cal-head h3{font-size:20px}
+}
+
 /* Arquivos */
 .folders{display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:14px}
 .folder{display:grid;gap:6px;justify-items:start;text-align:left;background:var(--card);border:2px solid transparent;border-radius:18px;padding:18px;cursor:pointer;color:var(--ink)}
@@ -464,7 +503,7 @@ dialog{border-radius:20px;border:3px solid var(--ink);box-shadow:8px 8px 0 var(-
 .danger-txt{color:var(--bad)!important;text-decoration-color:var(--bad)!important}
 
 /* ---- Mobile: compact header, bottom tab bar, full-screen sheets, quieter cards ---- */
-#bnav{display:none;position:fixed;left:0;right:0;bottom:0;z-index:20;grid-template-columns:repeat(5,1fr);background:var(--surface);border-top:2px solid var(--ink);padding:4px max(8px,env(safe-area-inset-right,0px)) calc(4px + env(safe-area-inset-bottom,0px)) max(8px,env(safe-area-inset-left,0px))}
+#bnav{display:none;position:fixed;left:0;right:0;bottom:0;z-index:20;grid-auto-flow:column;grid-auto-columns:1fr;background:var(--surface);border-top:2px solid var(--ink);padding:4px max(8px,env(safe-area-inset-right,0px)) calc(4px + env(safe-area-inset-bottom,0px)) max(8px,env(safe-area-inset-left,0px))}
 #bnav button{border:0;background:none;display:grid;justify-items:center;gap:3px;padding:7px 0 5px;font-family:var(--f-display);font-weight:400;text-transform:uppercase;letter-spacing:.05em;font-size:12px;color:var(--muted);cursor:pointer;border-radius:10px}
 #bnav button svg{width:23px;height:23px}
 #bnav button[aria-current="page"]{color:var(--accent)}
@@ -677,6 +716,7 @@ dialog{border-radius:20px;border:3px solid var(--ink);box-shadow:8px 8px 0 var(-
       <button data-act="tab" data-tab="tarefas">Tarefas</button>
       <button data-act="tab" data-tab="avisos">Avisos</button>
       <button data-act="tab" data-tab="arquivos">Arquivos</button>
+      <button data-act="tab" data-tab="historico" class="so-admin" hidden>Histórico</button>
     </nav>
   </div>
   <div class="stripes" aria-hidden="true"><i></i><i></i><i></i><i></i></div>
@@ -697,6 +737,7 @@ dialog{border-radius:20px;border:3px solid var(--ink);box-shadow:8px 8px 0 var(-
   <button type="button" data-act="tab" data-tab="tarefas"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="3" width="18" height="18" rx="4"/><path d="M8 12l3 3 5-6"/></svg>Tarefas</button>
   <button type="button" data-act="tab" data-tab="avisos"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 10v4h4l6 4V6L7 10z"/><path d="M17 9a4 4 0 0 1 0 6"/></svg>Avisos</button>
   <button type="button" data-act="tab" data-tab="arquivos"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 7a2 2 0 0 1 2-2h4l2 2h8a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/></svg>Arquivos</button>
+  <button type="button" data-act="tab" data-tab="historico" class="so-admin" hidden><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 12a9 9 0 1 0 3-6.7L3 8"/><path d="M3 3v5h5M12 7v5l3 2"/></svg>Histórico</button>
 </nav>
 <div id="chatfab-wrap" hidden>
   <button type="button" id="chatfab" data-act="chat-open" aria-label="Abrir chat da equipe">
@@ -725,10 +766,10 @@ const COLS = ['cultos','eventos','escalas','tarefas','avisos','arquivos'];
 const state = {cultos:[],eventos:[],escalas:[],tarefas:[],avisos:[],arquivos:[]};
 const loaded = {};
 let db = null, mode = 'loading', canWrite = true;
-const TABS = ['inicio','agenda','tarefas','avisos','arquivos'];
+const TABS = ['inicio','agenda','tarefas','avisos','arquivos','historico'];
 let tab = TABS.includes(location.hash.slice(1)) ? location.hash.slice(1) : (()=>{try{return localStorage.getItem('youth-tab')||'inicio'}catch(e){return 'inicio'}})();
 if(!TABS.includes(tab)) tab='inicio';
-const seg = {agenda:'proximos', tarefas:'abertas'};
+const seg = {agenda:'proximos', tarefas:'abertas', hist:'todos'};
 let pastaAberta = null; // folder open in the Arquivos tab
 
 const areaRank = a => { const i = AREAS.indexOf(a); return i < 0 ? 98 : i; };
@@ -1111,6 +1152,8 @@ function render(){
   else bn.innerHTML = '';
 
   document.querySelectorAll('.tabs button, #bnav button').forEach(b => b.setAttribute('aria-current', b.dataset.tab === tab ? 'page' : 'false'));
+  document.querySelectorAll('.so-admin').forEach(el => el.hidden = !(sb && isAdmin));
+  if(tab === 'historico' && !(sb && isAdmin) && mode === 'live' && equipe.length){ tab = 'inicio'; }
   $('#view').innerHTML = VIEWS[tab]();
   if(chatOpen) renderChatList();   // the floating chat keeps its composer; only the message list refreshes
   updateChatFab();
@@ -1269,7 +1312,11 @@ function renderDetail(){
       ${ev && ev.descricao ? `<p style="margin:14px 0 0;white-space:pre-wrap">${esc(ev.descricao)}</p>` : ''}
       ${esq.length ? `<div class="sect-h" style="margin-top:18px"><h3>Equipes</h3></div><div class="roles">${esq.map(e => teamRow(e, false)).join('')}</div>` : ''}
       ${(tl => tl.length ? `<div class="sect-h" style="margin-top:18px"><h3>Tarefas deste evento</h3></div>${tl.map(todoRow).join('')}` : '')(state.tarefas.filter(x => x.eventoRef === ref).sort(taskSort))}
-      <div class="row" style="margin-top:18px">${W(ev ? `<button class="btn primary" data-act="qopen">Editar informações</button>` : '')}${W(c ? `<button class="btn" data-act="edit" data-col="cultos" data-id="${esc(c.id)}">Editar dirigente e preletor</button>` : '')}</div>`;
+      <div class="row" style="margin-top:18px">${W(ev ? `<button class="btn primary" data-act="qopen">Editar informações</button>` : '')}${W(c ? `<button class="btn" data-act="edit" data-col="cultos" data-id="${esc(c.id)}">Editar dirigente e preletor</button>` : '')}</div>
+      <div class="addcal"><span class="eyebrow">Adicionar ao meu calendário</span><div class="row">
+        <button class="btn" data-act="addcal" data-tipo="ics" data-kind="${it.kind}" data-id="${esc(it.id)}">iPhone / Outlook</button>
+        <button class="btn" data-act="addcal" data-tipo="google" data-kind="${it.kind}" data-id="${esc(it.id)}">Google Agenda</button>
+      </div></div>`;
   }
   const count = {ordem: c && (c.ordem||[]).length ? '✓' : '', escalas: esq.length || '', resp: '', obs: it.rec.observacoes ? '✓' : ''};
   dlg.innerHTML = `<div class="dwrap">
@@ -2077,6 +2124,103 @@ document.addEventListener('keydown', ev => {
 });
 document.addEventListener('input', ev => { if(ev.target.id === 'chat-text'){ const t = ev.target; t.style.height = 'auto'; t.style.height = Math.min(t.scrollHeight, 140) + 'px'; renderMentionList(t); } });
 
+/* ---------- Histórico de atividades (aba só do administrador) ----------
+   Rows come from public.atividades, written by a database trigger (supabase/12-historico-e-resumo.sql). */
+let hist = {rows: [], loaded: false, loading: false, err: '', filtro: 'todos'};
+async function loadHistorico(){
+  if(!sb || hist.loading) return;
+  hist.loading = true;
+  const {data, error} = await sb.from('atividades').select('*').order('quando', {ascending: false}).limit(400);
+  hist.loading = false; hist.loaded = true;
+  hist.err = error ? (/relation|schema cache|does not exist/i.test(error.message) ? 'missing' : error.message) : '';
+  hist.rows = data || [];
+  if(tab === 'historico') render();
+}
+const HIST_COL = {tarefas: ['a tarefa', 'Tarefas'], eventos: ['o evento', 'Eventos'], cultos: ['o cronograma', 'Cronogramas'], avisos: ['o aviso', 'Avisos'], arquivos: ['o arquivo', 'Arquivos'], escalas: ['a equipe', 'Equipes']};
+const HIST_ACAO = {criou: ['criou', '#12804F'], editou: ['editou', '#5E5A55'], concluiu: ['concluiu', '#E8003F'], reabriu: ['reabriu', '#A35F00'], marcou: ['marcou itens de', '#5A11E7'], apagou: ['apagou', '#C8102E']};
+function historicoView(){
+  const head = `<div class="bar"><h2>Histórico</h2><div class="row">${segBtns('hist', [['todos','Tudo'],['tarefas','Tarefas'],['eventos','Eventos'],['avisos','Avisos'],['arquivos','Arquivos']])}<button type="button" class="btn ghost" data-act="hist-reload">Atualizar</button></div></div>`;
+  if(!sb || !isAdmin) return head + empty('Só para o administrador', 'O histórico de atividades da equipe aparece apenas para o administrador do painel.');
+  if(!hist.loaded){ loadHistorico(); return head + loadingBox(); }
+  if(hist.err === 'missing') return head + empty('Falta um passo no banco', 'Rode o arquivo supabase/12-historico-e-resumo.sql no SQL Editor do Supabase.');
+  if(hist.err) return head + `<p class="muted">Não foi possível carregar: ${esc(hist.err)}</p>`;
+  const f = seg.hist || 'todos';
+  const rows = hist.rows.filter(r => f === 'todos' || r.colecao === f || (f === 'eventos' && (r.colecao === 'cultos' || r.colecao === 'escalas')));
+  if(!rows.length) return head + `<p class="muted hist-sub">Tudo o que a equipe cria, edita, conclui ou apaga aparece aqui. Você recebe um resumo todo dia às 13:30.</p>` + empty('Nada por aqui ainda', 'Assim que alguém mexer no painel, aparece neste histórico.');
+  const nomeDe = email => { const m = equipe.find(x => lower(x.email) === lower(email)); return m ? memberName(m) : (email === 'sistema' ? 'Sistema' : String(email).split('@')[0]); };
+  let out = '', dia = '';
+  rows.forEach(r => {
+    const d = new Date(r.quando), day = d.getFullYear() + '-' + pad(d.getMonth() + 1) + '-' + pad(d.getDate());
+    if(day !== dia){ if(dia) out += '</ul>'; out += `<div class="month">${esc(day === todayStr() ? 'Hoje' : day === addDays(todayStr(), -1) ? 'Ontem' : longDate(day))}</div><ul class="hist">`; dia = day; }
+    const [verbo, cor] = HIST_ACAO[r.acao] || [r.acao, '#5E5A55'], [art] = HIST_COL[r.colecao] || ['o item'];
+    const frase = r.acao === 'marcou' ? 'marcou itens da tarefa' : verbo + ' ' + art;
+    out += `<li class="hrow" style="--hc:${cor}"><span class="hdot" aria-hidden="true"></span>
+      <div class="hbody"><span><b>${esc(nomeDe(r.quem))}</b> ${esc(frase)} <b>${esc(r.titulo || '')}</b></span>${r.detalhe ? `<span class="muted hdet">${esc(r.detalhe)}</span>` : ''}</div>
+      <span class="mono muted htime">${esc(pad(d.getHours()) + ':' + pad(d.getMinutes()))}</span></li>`;
+  });
+  return head + `<p class="muted hist-sub">Últimas ${rows.length} atividades da equipe. Você recebe um resumo todo dia às 13:30.</p>` + out + '</ul>';
+}
+
+/* ---------- Calendário (grade do mês) ---------- */
+let calMes = todayStr().slice(0, 7), calDia = todayStr();
+function calendarioHtml(){
+  const [y, m] = calMes.split('-').map(Number), t = todayStr();
+  const start = new Date(y, m - 1, 1).getDay(), days = new Date(y, m, 0).getDate();
+  const byDay = {};
+  agendaItems().filter(x => x.data && x.data.startsWith(calMes)).forEach(x => (byDay[x.data] = byDay[x.data] || []).push(x));
+  Object.values(byDay).forEach(l => l.sort((a, b) => (a.hora || '').localeCompare(b.hora || '')));
+  let cells = '';
+  for(let i = 0; i < start; i++) cells += '<div class="cal-cell vazio" aria-hidden="true"></div>';
+  for(let d = 1; d <= days; d++){
+    const iso = `${y}-${pad(m)}-${pad(d)}`, evs = byDay[iso] || [];
+    cells += `<button type="button" class="cal-cell${iso === t ? ' hoje' : ''}${iso === calDia ? ' sel' : ''}${iso < t ? ' passado' : ''}" data-act="cal-dia" data-dia="${iso}" aria-label="${esc(dpLabel(iso))}: ${evs.length} evento${evs.length === 1 ? '' : 's'}">
+      <span class="cal-n">${d}</span>
+      <span class="cal-evs">${evs.slice(0, 3).map(e => `<span class="cal-ev" title="${esc(e.titulo)}">${e.hora ? `<b>${esc(e.hora)}</b> ` : ''}${esc(e.titulo)}</span>`).join('')}${evs.length > 3 ? `<span class="cal-mais">+${evs.length - 3}</span>` : ''}</span>
+      ${evs.length ? `<span class="cal-dots" aria-hidden="true">${evs.slice(0, 4).map(() => '<i></i>').join('')}</span>` : ''}
+    </button>`;
+  }
+  const doDia = byDate(agendaItems().filter(x => x.data === calDia));
+  return `<div class="cal">
+      <div class="cal-head"><button type="button" class="btn ghost" data-act="cal-nav" data-dir="-1" aria-label="Mês anterior">‹</button><h3>${MOF[m - 1]} ${y}</h3><button type="button" class="btn ghost" data-act="cal-nav" data-dir="1" aria-label="Próximo mês">›</button><button type="button" class="btn" data-act="cal-hoje">Hoje</button></div>
+      <div class="cal-grid">${['Dom','Seg','Ter','Qua','Qui','Sex','Sáb'].map(w => `<span class="cal-wd">${w}</span>`).join('')}${cells}</div>
+    </div>
+    <div class="cal-dia">
+      <div class="month" style="margin-top:20px">${esc(dpLabel(calDia))}</div>
+      ${doDia.length ? `<div class="stack">${doDia.map(it => homeEventCard(it, false)).join('')}</div>` : `<p class="muted" style="margin:0">Nenhum evento neste dia.${canWrite ? ' Use “+ Novo evento” para marcar um.' : ''}</p>`}
+    </div>`;
+}
+
+/* ---------- Adicionar ao meu calendário ---------- */
+function eventoDatas(it){
+  const desc = String((it.rec && it.rec.descricao) || '');
+  const ini = it.hora || '';
+  const fimTxt = (desc.match(/às\s*(\d{1,2})(?:[:h](\d{2}))?/i) || []);
+  const fim = fimTxt[1] ? pad(+fimTxt[1]) + ':' + (fimTxt[2] || '00') : '';
+  return {ini, fim};
+}
+function calStamp(data, hora){ return data.replace(/-/g, '') + (hora ? 'T' + hora.replace(':', '') + '00' : ''); }
+function addToCalendar(it, tipo){
+  const {ini, fim} = eventoDatas(it);
+  const dia = it.data, nextDay = addDays(dia, 1);
+  let start, end;
+  if(ini){ start = calStamp(dia, ini); const e = fim && fim > ini ? fim : hhmm(minutes(ini) + 120); end = calStamp(dia, e); }
+  else { start = calStamp(dia, ''); end = calStamp(nextDay, ''); }
+  const titulo = it.titulo || 'Evento Youth', local = it.local || '', detalhes = [it.tipo, (it.rec && it.rec.descricao) || ''].filter(Boolean).join('\n');
+  if(tipo === 'google'){
+    const u = 'https://calendar.google.com/calendar/render?action=TEMPLATE&text=' + encodeURIComponent(titulo) + '&dates=' + start + '/' + end + '&ctz=America/Sao_Paulo' + (local ? '&location=' + encodeURIComponent(local) : '') + '&details=' + encodeURIComponent(detalhes);
+    openUrl(u, false); return;
+  }
+  const escIcs = s => String(s).replace(/\\/g, '\\\\').replace(/\n/g, '\\n').replace(/([,;])/g, '\\$1');
+  const ics = ['BEGIN:VCALENDAR', 'VERSION:2.0', 'PRODID:-//Painel Youth//PT-BR', 'CALSCALE:GREGORIAN', 'BEGIN:VEVENT',
+    'UID:' + it.kind + '-' + it.id + '@painel-youth', 'DTSTAMP:' + new Date().toISOString().replace(/[-:]/g, '').replace(/\.\d+/, ''),
+    ini ? 'DTSTART;TZID=America/Sao_Paulo:' + start : 'DTSTART;VALUE=DATE:' + start,
+    ini ? 'DTEND;TZID=America/Sao_Paulo:' + end : 'DTEND;VALUE=DATE:' + end,
+    'SUMMARY:' + escIcs(titulo), local ? 'LOCATION:' + escIcs(local) : '', detalhes ? 'DESCRIPTION:' + escIcs(detalhes) : '',
+    'BEGIN:VALARM', 'TRIGGER:-PT2H', 'ACTION:DISPLAY', 'DESCRIPTION:' + escIcs(titulo), 'END:VALARM',
+    'END:VEVENT', 'END:VCALENDAR'].filter(Boolean).join('\r\n');
+  saveFile((titulo.replace(/[\\/:*?"<>|]/g, '').slice(0, 60) || 'evento') + '.ics', new Blob([ics], {type: 'text/calendar'}));
+}
+
 /* Home: one of the next three agenda items, with its ordem status and teams at a glance. */
 function homeEventCard(it, first){
   const c = it.culto, esq = escalasFor(it), key = `data-kind="${it.kind}" data-id="${esc(it.id)}"`;
@@ -2128,8 +2272,9 @@ const VIEWS = {
   },
 
   agenda(){
-    const head = `<div class="bar"><h2>Agenda</h2><div class="row">${segBtns('agenda', [['proximos','Próximos'],['anteriores','Anteriores']])}${W('<button class="btn primary" data-act="new" data-col="eventos">+ Novo evento</button>')}</div></div>`;
+    const head = `<div class="bar"><h2>Agenda</h2><div class="row">${segBtns('agenda', [['mes','Calendário'],['proximos','Próximos'],['anteriores','Anteriores']])}${W('<button class="btn primary" data-act="new" data-col="eventos">+ Novo evento</button>')}</div></div>`;
     if(isLoading(['eventos','cultos','escalas'])) return head + loadingBox();
+    if(seg.agenda === 'mes') return head + calendarioHtml();
     const t = todayStr();
     const fut = seg.agenda === 'proximos';
     const list = byDate(agendaItems().filter(x => x.data && (fut ? x.data >= t : x.data < t)), fut ? 1 : -1);
@@ -2164,6 +2309,7 @@ const VIEWS = {
   tarefas(){ return tarefasView(); },
 
   arquivos(){ return arquivosView(); },
+  historico(){ return historicoView(); },
 
   avisos(){
     const head = `<div class="bar"><h2>Mural de avisos</h2>${W('<button class="btn primary" data-act="new" data-col="avisos">+ Novo aviso</button>')}</div>`;
@@ -2699,6 +2845,11 @@ document.addEventListener('click', async ev => {
     try { Object.keys(localStorage).filter(k => /^sb-.*auth-token/.test(k)).forEach(k => localStorage.removeItem(k)); } catch(e){}
     location.replace(location.pathname);
   }
+  else if(act === 'hist-reload'){ hist.loaded = false; render(); }
+  else if(act === 'cal-dia'){ calDia = b.dataset.dia; render(); const d = $('.cal-dia'); if(d && matchMedia('(max-width: 640px)').matches) d.scrollIntoView({behavior: 'smooth', block: 'start'}); }
+  else if(act === 'cal-nav'){ const [y, m] = calMes.split('-').map(Number), d = new Date(y, m - 1 + (+b.dataset.dir), 1); calMes = d.getFullYear() + '-' + pad(d.getMonth() + 1); render(); }
+  else if(act === 'cal-hoje'){ calMes = todayStr().slice(0, 7); calDia = todayStr(); render(); }
+  else if(act === 'addcal'){ const it = findItem(b.dataset.kind, b.dataset.id); if(it) addToCalendar(it, b.dataset.tipo); }
   else if(act === 'notif-chat'){ $('#bellpop').hidden = true; openChat(); }
   else if(act === 'chat-open'){ openChat(); }
   else if(act === 'online'){ if(online.length) toast('Online agora: ' + online.map(p => p.nome).join(', ')); }
