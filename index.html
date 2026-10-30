@@ -308,6 +308,18 @@ dialog{border-radius:20px;border:3px solid var(--ink);box-shadow:8px 8px 0 var(-
 .ulist{list-style:none;margin:0;padding:0;display:grid;gap:8px}
 .urow{display:flex;gap:12px;align-items:center;background:var(--card);border-radius:14px;padding:12px 14px}
 .urow.editing{display:block}
+.uadm{justify-self:start;border:0;background:none;padding:2px 0;font:inherit;font-size:13px;font-weight:600;color:var(--accent);cursor:pointer;text-decoration:underline;text-underline-offset:3px}
+.tagbox{display:grid;gap:10px;background:var(--card);border-radius:12px;padding:12px 14px}
+.tagrow{display:flex;flex-wrap:wrap;gap:8px;align-items:center}
+.tagrow .eyebrow{margin-right:4px}
+.tagp{display:inline-flex;align-items:center;gap:6px;background:var(--surface);border:1px solid var(--line);border-radius:999px;padding:3px 6px 3px 3px;font-weight:600;font-size:14px}
+.tagp button{border:0;background:none;cursor:pointer;font-size:17px;line-height:1;padding:0 4px;color:var(--muted)}
+.tav{width:24px;height:24px;border-radius:50%;background:var(--accent);color:#fff;display:inline-grid;place-items:center;font-size:12px;font-weight:700;flex:none}
+.tagbtn{margin-left:auto}
+.tagpick{display:flex;flex-wrap:wrap;gap:6px}
+.tagpick button{display:inline-flex;align-items:center;gap:6px;border:1px solid var(--line);background:var(--surface);border-radius:999px;padding:4px 12px 4px 4px;font:inherit;font-weight:600;font-size:14px;cursor:pointer}
+.tagpick button[aria-pressed="true"]{border-color:var(--accent);background:var(--accent);color:#fff}
+.tagpick button[aria-pressed="true"] .tav{background:#fff;color:var(--accent)}
 .ubody{flex:1;min-width:0;display:grid;gap:3px}
 .ubody b{overflow-wrap:anywhere;display:flex;align-items:center;gap:6px;flex-wrap:wrap}
 .ubody .mono{font-size:12px;overflow-wrap:anywhere}
@@ -877,7 +889,12 @@ function renderOnline(){
   el.innerHTML = `<span class="on-label">Online</span>${shown.map((p, i) => `<span class="on-person${i ? ' on-more-m' : ''}"><i class="on-dot" aria-hidden="true"></i>${esc(p.nome)}</span>`).join('')}${extra > 0 ? `<span class="on-person on-extra">+${extra}</span>` : ''}${online.length > 1 ? `<span class="on-person on-count-m">+${online.length - 1}</span>` : ''}`;
   el.setAttribute('aria-label', 'Online agora: ' + online.map(p => p.nome).join(', '));
 }
-const memberName = m => m.nome || m.email.split('@')[0].replace(/^./, ch => ch.toUpperCase());
+function abrirObsDoLink(){
+  const alvo = location.hash.match(/^#obs=(eventos|cultos):(.+)$/); if(!alvo) return;
+  history.replaceState(null, '', location.pathname + location.search);
+  tab = 'agenda'; render(); openDetail(alvo[1], decodeURIComponent(alvo[2]), 'obs');
+}
+const memberName = m => m.nome ||m.email.split('@')[0].replace(/^./, ch => ch.toUpperCase());
 async function startSupabase(user){
   sbUser = user; $('#login').hidden = true;
   mode = 'live'; canWrite = true; render();
@@ -888,6 +905,9 @@ async function startSupabase(user){
   COLS.forEach(c => { state[c] = []; loaded[c] = true; });
   (data || []).forEach(r => { if(state[r.colecao]) state[r.colecao].push({...r.dados, id: r.id}); });
   render();
+  // Opened from a "você foi marcado" notification: #obs=eventos:<id> goes straight to that event's Observações.
+  abrirObsDoLink();
+  window.addEventListener('hashchange', abrirObsDoLink);
   sb.channel('registros-youth').on('postgres_changes', {event: '*', schema: 'public', table: 'registros'}, p => {
     const r = p.eventType === 'DELETE' ? p.old : p.new; if(!r || !state[r.colecao]) return;
     if(p.eventType === 'DELETE') state[r.colecao] = state[r.colecao].filter(x => x.id !== r.id);
@@ -964,7 +984,8 @@ function equipeHtml(loading){
         </div>
       </form></li>`;
     return `<li class="urow"><span class="mavatar" aria-hidden="true">${esc(nome.replace(/^(Pr\.?|Pra\.?)\s+/i, '').charAt(0).toUpperCase())}</span>
-      <div class="ubody"><b>${on ? '<i class="on-dot" aria-label="online"></i> ' : ''}${esc(nome)}${mine ? ' <span class="muted">(você)</span>' : ''}</b><span class="muted mono">${esc(u.email)}</span><span class="row">${u.papel === 'admin' ? '<span class="chip key">Administrador</span>' : '<span class="chip">Editor</span>'}${status}</span></div>
+      <div class="ubody"><b>${on ? '<i class="on-dot" aria-label="online"></i> ' : ''}${esc(nome)}${mine ? ' <span class="muted">(você)</span>' : ''}</b><span class="muted mono">${esc(u.email)}</span><span class="row">${u.papel === 'admin' ? '<span class="chip key">Administrador</span>' : '<span class="chip">Editor</span>'}${status}</span>
+        ${mine ? '' : `<button type="button" class="uadm" data-act="u-papel" data-email="${esc(u.email)}">${u.papel === 'admin' ? 'Remover como administrador' : 'Tornar administrador'}</button>`}</div>
       <button type="button" class="btn ghost" data-act="u-edit" data-email="${esc(u.email)}">Editar</button></li>`;
   }).join('');
   const novo = adminEdit === '__novo' ? `<form class="uform unew" data-email="" novalidate>
@@ -984,6 +1005,19 @@ function equipeHtml(loading){
     <ul class="ulist">${rows}</ul>
     <p class="muted" style="font-size:12px;margin:14px 0 0">Editor: vê e edita agenda, tarefas, avisos e cronogramas, usa o chat e baixa arquivos. Administrador: tudo isso, mais enviar e apagar arquivos e gerenciar esta lista.</p>
   </div></div>`;
+}
+// One-tap promote / demote, like a WhatsApp group admin (the Editar form still works too).
+async function togglePapel(email){
+  const u = adminUsers.find(x => lower(x.email) === lower(email)); if(!u) return;
+  const nome = u.nome || u.email.split('@')[0], vira = u.papel === 'admin' ? 'editor' : 'admin';
+  const pergunta = vira === 'admin'
+    ? `Tornar ${nome} administrador?\n\n${nome} vai poder gerenciar usuários, enviar e apagar arquivos, apagar tarefas, ver o Histórico e receber o resumo diário.`
+    : `Remover ${nome} como administrador?\n\n${nome} continua na equipe como editor.`;
+  if(!confirm(pergunta)) return;
+  const {error} = await sb.rpc('admin_salvar_membro', {p_email: u.email, p_nome: u.nome || '', p_papel: vira});
+  if(error){ toast('Não foi possível mudar: ' + error.message); return; }
+  toast(vira === 'admin' ? nome + ' agora é administrador' : nome + ' agora é editor');
+  await loadAdminUsers(); await loadEquipe(); renderEquipe(); render();
 }
 async function createLogin(email, senha){
   // A separate client that does not store a session, so the admin stays signed in.
@@ -1292,15 +1326,16 @@ function renderDetail(){
   } else if(tb === 'obs'){
     const txt = it.rec.observacoes || '';
     const marc = it.rec.marcados || [];
-    const chips = marc.length ? `<div class="row"><span class="eyebrow">Marcados</span>${marc.map(n => `<span class="chip">@${esc(n)}</span>`).join('')}</div>` : '';
+    if(!detailCtx.obsDirty){ detailCtx.tags = [...marc]; detailCtx.untagged = []; }
     body = canWrite
       ? `<form id="obsform" class="stack" novalidate>
+          <div class="tagbox" id="tagbox">${tagBoxHtml()}</div>
           <div class="fld"><label for="obs-text">Observações do evento</label><textarea id="obs-text" name="observacoes" style="min-height:200px" placeholder="Anote lembretes, pedidos e combinados. Digite @ para marcar alguém da equipe.">${esc(txt)}</textarea></div>
           <div class="mlist" id="mlist" hidden></div>
-          ${chips}
           <div class="row" style="justify-content:space-between"><span class="muted" style="font-size:13px">${it.rec.obsEm ? 'Última alteração: ' + esc(fmtD(it.rec.obsEm.slice(0,10))) : 'Ainda sem observações.'}</span><button type="submit" class="btn primary">Salvar observações</button></div>
         </form>`
-      : (txt ? `<p style="margin:0;white-space:pre-wrap;overflow-wrap:anywhere">${withMentions(txt, marc)}</p>` : '<p class="muted" style="margin:0">Nenhuma observação registrada.</p>');
+      : (marc.length ? `<div class="tagbox"><div class="tagrow"><span class="eyebrow">Pessoas marcadas</span>${marc.map(n => tagPerson(n, false)).join('')}</div></div>` : '')
+        + (txt ? `<p style="margin:0;white-space:pre-wrap;overflow-wrap:anywhere">${withMentions(txt, marc)}</p>` : '<p class="muted" style="margin:0">Nenhuma observação registrada.</p>');
   } else {
     const ev = it.kind === 'eventos' ? it.rec : null;
     const rows = ev
@@ -2541,7 +2576,9 @@ document.addEventListener('submit', async ev => {
   const it = findItem(detailCtx.kind, detailCtx.id); if(!it) return;
   const btn = ev.target.querySelector('[type=submit]'); btn.disabled = true; btn.textContent = 'Salvando…';
   const val = ev.target.elements.observacoes.value.trim();
-  if(await save(it.kind, {...it.rec, observacoes: val, marcados: computeMentions(val), obsEm: new Date().toISOString()})){
+  const fora = (detailCtx.untagged || []).map(norm), marcados = new Map();
+  [...(detailCtx.tags || []), ...computeMentions(val).filter(n => !fora.includes(norm(n)))].forEach(n => { if(!marcados.has(norm(n))) marcados.set(norm(n), n); });
+  if(await save(it.kind, {...it.rec, observacoes: val, marcados: [...marcados.values()], obsEm: new Date().toISOString(), obsPor: sbUser ? sbUser.email : (getMe() || '')})){
     toast('Observações salvas'); detailCtx.obsDirty = false; detailCtx.picked = []; renderDetail();
   } else { btn.disabled = false; btn.textContent = 'Salvar observações'; }
 });
@@ -2603,8 +2640,29 @@ function pickMention(name){
   ta.value = ta.value.slice(0, start) + '@' + name + ' ' + ta.value.slice(pos);
   const caret = start + name.length + 2;
   ta.focus(); ta.setSelectionRange(caret, caret);
-  if(ta.id === 'obs-text' && detailCtx){ detailCtx.picked = [...(detailCtx.picked || []), name]; detailCtx.obsDirty = true; }
+  if(ta.id === 'obs-text' && detailCtx){ detailCtx.picked = [...(detailCtx.picked || []), name]; detailCtx.obsDirty = true; setTag(name, true); }
   const box = mentionBox(ta); if(box) box.hidden = true;
+}
+
+/* "Marcar pessoas" (like tagging people on an Instagram post): tags live in detailCtx.tags until
+   the observações are saved; only the tag box is redrawn so the text being typed is kept. */
+const tagInitial = n => esc(String(n).replace(/^(Pr\.?|Pra\.?)\s+/i, '').charAt(0).toUpperCase());
+const tagPerson = (n, edit) => `<span class="tagp"><span class="tav" aria-hidden="true">${tagInitial(n)}</span>${esc(n)}${edit ? `<button type="button" data-act="untag" data-name="${esc(n)}" aria-label="Desmarcar ${esc(n)}">×</button>` : ''}</span>`;
+function tagBoxHtml(){
+  const tags = detailCtx.tags || [], has = n => tags.some(t => norm(t) === norm(n));
+  const pessoas = mentionPeople(null);
+  return `<div class="tagrow"><span class="eyebrow">Pessoas marcadas</span>${tags.map(n => tagPerson(n, true)).join('') || '<span class="muted" style="font-size:13px">Ninguém marcado.</span>'}
+      <button type="button" class="btn ghost tagbtn" data-act="tagopen" aria-expanded="${!!detailCtx.tagOpen}">${detailCtx.tagOpen ? 'Fechar' : '+ Marcar pessoas'}</button></div>
+    ${detailCtx.tagOpen ? `<div class="tagpick">${pessoas.length ? pessoas.map(n => `<button type="button" data-act="tagtoggle" data-name="${esc(n)}" aria-pressed="${has(n)}"><span class="tav" aria-hidden="true">${tagInitial(n)}</span>${esc(n)}${has(n) ? ' ✓' : ''}</button>`).join('') : '<span class="muted" style="font-size:13px">Ainda não há outros usuários cadastrados no app.</span>'}</div>
+      <p class="muted" style="font-size:12px;margin:0">Quem for marcado recebe um aviso no celular quando você salvar.</p>` : ''}`;
+}
+function setTag(name, on){
+  if(!detailCtx) return;
+  const k = norm(name), tags = (detailCtx.tags || []).filter(t => norm(t) !== k);
+  detailCtx.tags = on ? [...tags, name] : tags;
+  detailCtx.untagged = (detailCtx.untagged || []).filter(t => norm(t) !== k).concat(on ? [] : [name]);
+  detailCtx.obsDirty = true;
+  const box = $('#tagbox'); if(box) box.innerHTML = tagBoxHtml();
 }
 
 let meMem = null, seenMem = [];
@@ -2888,6 +2946,10 @@ document.addEventListener('click', async ev => {
   else if(act === 'menu-push-off'){ b.disabled = true; await disablePush(); }
   else if(act === 'u-new'){ adminEdit = '__novo'; renderEquipe(); setTimeout(() => { const f = $('#un-email'); if(f) f.focus(); }, 0); }
   else if(act === 'u-edit'){ adminEdit = b.dataset.email; renderEquipe(); }
+  else if(act === 'u-papel'){ togglePapel(b.dataset.email); }
+  else if(act === 'tagopen'){ detailCtx.tagOpen = !detailCtx.tagOpen; const box = $('#tagbox'); if(box) box.innerHTML = tagBoxHtml(); }
+  else if(act === 'tagtoggle'){ setTag(b.dataset.name, b.getAttribute('aria-pressed') !== 'true'); }
+  else if(act === 'untag'){ setTag(b.dataset.name, false); }
   else if(act === 'u-cancel'){ adminEdit = null; renderEquipe(); }
   else if(act === 'u-del'){
     if(!b.dataset.armed){ b.dataset.armed = '1'; b.textContent = 'Clique de novo para remover'; setTimeout(() => { if(b.isConnected){ delete b.dataset.armed; b.textContent = 'Remover acesso'; } }, 4000); return; }
