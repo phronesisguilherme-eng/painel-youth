@@ -170,6 +170,7 @@ dialog form{display:flex;flex-direction:column;max-height:calc(100vh - 32px)}
 .fld textarea{min-height:84px;resize:vertical}
 .fld.check{display:flex;align-items:center;gap:8px}
 .fld.check input{width:auto}
+form:has(input[name="diaTodo"]:checked) .fld-t{display:none}
 .rep{grid-column:1/-1;border:1px solid var(--line);border-radius:10px;padding:12px;display:grid;gap:8px}
 .rep-h{display:flex;justify-content:space-between;align-items:center;gap:8px;flex-wrap:wrap}
 .rep-h b{font-size:12px;text-transform:uppercase;letter-spacing:.06em;color:var(--muted)}
@@ -483,6 +484,10 @@ dialog{border-radius:20px;border:3px solid var(--ink);box-shadow:8px 8px 0 var(-
 .cal-evs{display:grid;gap:2px;min-width:0}
 .cal-ev{font-size:11px;line-height:1.25;background:var(--soft);border-left:3px solid var(--accent);border-radius:4px;padding:2px 4px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .cal-ev b{font-family:var(--f-mono);font-size:10px}
+.cal-ev.multi{background:var(--accent);color:#fff;border-left-color:#111}
+.cal-ev.cont{border-left:0;border-top-left-radius:0;border-bottom-left-radius:0;margin-left:-6px;padding-left:8px}
+.cal-ev.segue{border-top-right-radius:0;border-bottom-right-radius:0;margin-right:-6px}
+.cal-ev.multi.canc{background:var(--soft);color:inherit}
 .cal-mais{font-size:11px;color:var(--muted);font-weight:600}
 .cal-dots{display:none;gap:3px;justify-content:center;margin-top:auto}
 .cal-dots i{width:6px;height:6px;border-radius:50%;background:var(--accent)}
@@ -1249,10 +1254,30 @@ function prazoChip(t){
 /* Each agenda item is an event (with an optional linked culto) or a standalone culto. */
 function agendaItems(){
   return [
-    ...state.eventos.map(e => ({kind:'eventos', id:e.id, rec:e, data:e.data, hora:e.hora, titulo:e.titulo, tipo:e.tipo || 'Evento', local:e.local, resp:e.responsavel, cancelado:!!e.cancelado, culto:state.cultos.find(c => c.eventoId === e.id)})),
+    ...state.eventos.map(e => ({kind:'eventos', id:e.id, rec:e, data:e.data, hora:e.diaTodo ? '' : e.hora, dataFim:e.dataFim, horaFim:e.diaTodo ? '' : e.horaFim, diaTodo:!!e.diaTodo, titulo:e.titulo, tipo:e.tipo || 'Evento', local:e.local, resp:e.responsavel, cancelado:!!e.cancelado, culto:state.cultos.find(c => c.eventoId === e.id)})),
     ...state.cultos.filter(c => !c.eventoId || !state.eventos.some(e => e.id === c.eventoId))
       .map(c => ({kind:'cultos', id:c.id, rec:c, data:c.data, hora:c.hora, titulo:c.nome || c.tema || 'Evento do Youth', tipo:c.tipo || 'Evento do Youth', local:'', resp:c.dirigente, cancelado:!!c.cancelado, culto:c}))
   ];
+}
+/* Events that last more than one day or the whole day (like Google Agenda):
+   dataFim/horaFim close the event, diaTodo hides the times. */
+const fimDe = it => it.dataFim && it.dataFim > it.data ? it.dataFim : it.data;
+const emAndamento = (it, dia) => !!it.data && it.data <= dia && fimDe(it) >= dia;
+const diaCurto = s => { const d = parseD(s); return `${WD[d.getDay()]}, ${d.getDate()} ${MO[d.getMonth()]}`; };
+function quando(it){
+  const multi = fimDe(it) !== it.data;
+  if(it.diaTodo) return multi ? `${diaCurto(it.data)} → ${diaCurto(fimDe(it))} · dia todo` : 'dia todo';
+  if(multi) return `${diaCurto(it.data)}${it.hora ? ' ' + it.hora : ''} → ${diaCurto(fimDe(it))}${it.horaFim ? ' ' + it.horaFim : ''}`;
+  return it.hora ? it.hora + (it.horaFim ? '–' + it.horaFim : '') : '';
+}
+const quandoLongo = it => fimDe(it) !== it.data ? quando(it) : fmtD(it.data) + (quando(it) ? ' · ' + quando(it) : '');
+const relEv = it => { const t = todayStr(); return it.data < t && fimDe(it) >= t ? 'acontecendo agora' : rel(it.data); };
+function ajustaFim(rec){
+  if(rec.diaTodo){ rec.hora = ''; rec.horaFim = ''; }
+  if(rec.dataFim && rec.data && rec.dataFim < rec.data) return 'O término não pode ser antes do início.';
+  if(rec.dataFim === rec.data) rec.dataFim = '';
+  if(!rec.dataFim && rec.hora && rec.horaFim && rec.horaFim <= rec.hora) return 'O horário de término precisa ser depois do início.';
+  return '';
 }
 const findItem = (kind, id) => agendaItems().find(i => i.kind === kind && i.id === id);
 const itemOfCulto = c => (c.eventoId && findItem('eventos', c.eventoId)) || findItem('cultos', c.id) || {kind:'cultos', id:c.id, data:c.data};
@@ -1340,7 +1365,7 @@ function renderDetail(){
   } else {
     const ev = it.kind === 'eventos' ? it.rec : null;
     const rows = ev
-      ? [['Responsável pelo evento', ev.responsavel],['Tipo', ev.tipo],['Local', ev.local],['Horário', ev.hora]]
+      ? [['Responsável pelo evento', ev.responsavel],['Tipo', ev.tipo],['Local', ev.local],[fimDe(it) !== it.data ? 'Quando' : 'Horário', fimDe(it) !== it.data ? quando(it) : (it.diaTodo ? 'Dia todo' : quando(it))]]
       : [['Tipo', it.tipo],['Horário', it.hora]];
     if(c) rows.push(['Dirigente', c.dirigente],['Preletor', c.preletor],['Ministro de louvor', c.louvor]);
     const filled = rows.filter(r => r[1]);
@@ -1356,7 +1381,7 @@ function renderDetail(){
   }
   const count = {ordem: c && (c.ordem||[]).length ? '✓' : '', escalas: esq.length || '', resp: '', obs: it.rec.observacoes ? '✓' : ''};
   dlg.innerHTML = `<div class="dwrap">
-    <div class="dh"><div class="item" style="align-items:center">${tile(it.data, it.data < todayStr())}<div class="body"><div class="eyebrow">${esc(it.tipo)} · ${esc(fmtD(it.data))}${it.hora ? ' · ' + esc(it.hora) : ''}</div><h2>${esc(it.titulo)}</h2></div></div><button type="button" class="x" data-act="close" aria-label="Fechar">×</button></div>
+    <div class="dh"><div class="item" style="align-items:center">${tile(it.data, fimDe(it) < todayStr())}<div class="body"><div class="eyebrow">${esc(it.tipo)} · ${esc(quandoLongo(it))}</div><h2>${esc(it.titulo)}</h2></div></div><button type="button" class="x" data-act="close" aria-label="Fechar">×</button></div>
     ${it.cancelado ? `<div class="faixa-canc" role="status"><span class="faixa-txt">Evento cancelado</span>${it.rec.canceladoMotivo ? `<span class="faixa-motivo">${esc(it.rec.canceladoMotivo)}</span>` : ''}</div>` : ''}
     ${editBar(it)}
     <nav class="steps" aria-label="Seções do compromisso">${DTABS.map(([k,l]) => `<button type="button" data-act="dtab" data-tab="${k}" aria-current="${k === tb ? 'step' : 'false'}">${l}${count[k] ? ` <span>${count[k]}</span>` : ''}</button>`).join('')}</nav>
@@ -2219,19 +2244,23 @@ function calendarioHtml(){
   const [y, m] = calMes.split('-').map(Number), t = todayStr();
   const start = new Date(y, m - 1, 1).getDay(), days = new Date(y, m, 0).getDate();
   const byDay = {};
-  agendaItems().filter(x => x.data && x.data.startsWith(calMes)).forEach(x => (byDay[x.data] = byDay[x.data] || []).push(x));
-  Object.values(byDay).forEach(l => l.sort((a, b) => (a.hora || '').localeCompare(b.hora || '')));
+  // A multi-day event shows on every day it covers (first day with its time, the others as a continuation).
+  agendaItems().filter(x => x.data && x.data <= calMes + '-31' && fimDe(x) >= calMes + '-01').forEach(x => {
+    for(let d = x.data, n = 0; d <= fimDe(x) && n < 62; d = addDays(d, 1), n++) if(d.startsWith(calMes)) (byDay[d] = byDay[d] || []).push(x);
+  });
+  Object.values(byDay).forEach(l => l.sort((a, b) => (fimDe(b) !== b.data) - (fimDe(a) !== a.data) || a.data.localeCompare(b.data) || (a.hora || '').localeCompare(b.hora || '')));
   let cells = '';
   for(let i = 0; i < start; i++) cells += '<div class="cal-cell vazio" aria-hidden="true"></div>';
   for(let d = 1; d <= days; d++){
     const iso = `${y}-${pad(m)}-${pad(d)}`, evs = byDay[iso] || [];
     cells += `<button type="button" class="cal-cell${iso === t ? ' hoje' : ''}${iso === calDia ? ' sel' : ''}${iso < t ? ' passado' : ''}" data-act="cal-dia" data-dia="${iso}" aria-label="${esc(dpLabel(iso))}: ${evs.length} evento${evs.length === 1 ? '' : 's'}">
       <span class="cal-n">${d}</span>
-      <span class="cal-evs">${evs.slice(0, 3).map(e => `<span class="cal-ev${e.cancelado ? ' canc' : ''}" title="${esc(e.titulo)}${e.cancelado ? ' (cancelado)' : ''}">${e.cancelado ? '<b>CANCELADO</b> ' : e.hora ? `<b>${esc(e.hora)}</b> ` : ''}${esc(e.titulo)}</span>`).join('')}${evs.length > 3 ? `<span class="cal-mais">+${evs.length - 3}</span>` : ''}</span>
+      <span class="cal-evs">${evs.slice(0, 3).map(e => { const multi = fimDe(e) !== e.data, cont = multi && e.data !== iso;
+        return `<span class="cal-ev${e.cancelado ? ' canc' : ''}${multi ? ' multi' : ''}${cont ? ' cont' : ''}${multi && fimDe(e) !== iso ? ' segue' : ''}" title="${esc(e.titulo)}${e.cancelado ? ' (cancelado)' : ''}">${e.cancelado ? '<b>CANCELADO</b> ' : !cont && e.hora ? `<b>${esc(e.hora)}</b> ` : ''}${esc(e.titulo)}</span>`; }).join('')}${evs.length > 3 ? `<span class="cal-mais">+${evs.length - 3}</span>` : ''}</span>
       ${evs.length ? `<span class="cal-dots" aria-hidden="true">${evs.slice(0, 4).map(e => e.cancelado ? '<i class="canc"></i>' : '<i></i>').join('')}</span>` : ''}
     </button>`;
   }
-  const doDia = byDate(agendaItems().filter(x => x.data === calDia));
+  const doDia = byDate(agendaItems().filter(x => emAndamento(x, calDia)));
   return `<div class="cal">
       <div class="cal-head"><button type="button" class="btn ghost" data-act="cal-nav" data-dir="-1" aria-label="Mês anterior">‹</button><h3>${MOF[m - 1]} ${y}</h3><button type="button" class="btn ghost" data-act="cal-nav" data-dir="1" aria-label="Próximo mês">›</button><button type="button" class="btn" data-act="cal-hoje">Hoje</button></div>
       <div class="cal-grid">${['Dom','Seg','Ter','Qua','Qui','Sex','Sáb'].map(w => `<span class="cal-wd">${w}</span>`).join('')}${cells}</div>
@@ -2252,11 +2281,16 @@ function eventoDatas(it){
 }
 function calStamp(data, hora){ return data.replace(/-/g, '') + (hora ? 'T' + hora.replace(':', '') + '00' : ''); }
 function addToCalendar(it, tipo){
-  const {ini, fim} = eventoDatas(it);
-  const dia = it.data, nextDay = addDays(dia, 1);
+  const {ini, fim: fimTxt} = eventoDatas(it);
+  const dia = it.data, ultimo = fimDe(it), fim = it.horaFim || fimTxt;
   let start, end;
-  if(ini){ start = calStamp(dia, ini); const e = fim && fim > ini ? fim : hhmm(minutes(ini) + 120); end = calStamp(dia, e); }
-  else { start = calStamp(dia, ''); end = calStamp(nextDay, ''); }
+  if(ini && !it.diaTodo){
+    start = calStamp(dia, ini);
+    const e = ultimo !== dia ? (fim || ini) : (fim && fim > ini ? fim : hhmm(minutes(ini) + 120));
+    end = calStamp(ultimo, e);
+  }
+  else { start = calStamp(dia, ''); end = calStamp(addDays(ultimo, 1), ''); }
+  const comHora = !!ini && !it.diaTodo;
   const titulo = it.titulo || 'Evento Youth', local = it.local || '', detalhes = [it.tipo, (it.rec && it.rec.descricao) || ''].filter(Boolean).join('\n');
   if(tipo === 'google'){
     const u = 'https://calendar.google.com/calendar/render?action=TEMPLATE&text=' + encodeURIComponent(titulo) + '&dates=' + start + '/' + end + '&ctz=America/Sao_Paulo' + (local ? '&location=' + encodeURIComponent(local) : '') + '&details=' + encodeURIComponent(detalhes);
@@ -2265,8 +2299,8 @@ function addToCalendar(it, tipo){
   const escIcs = s => String(s).replace(/\\/g, '\\\\').replace(/\n/g, '\\n').replace(/([,;])/g, '\\$1');
   const ics = ['BEGIN:VCALENDAR', 'VERSION:2.0', 'PRODID:-//Painel Youth//PT-BR', 'CALSCALE:GREGORIAN', 'BEGIN:VEVENT',
     'UID:' + it.kind + '-' + it.id + '@painel-youth', 'DTSTAMP:' + new Date().toISOString().replace(/[-:]/g, '').replace(/\.\d+/, ''),
-    ini ? 'DTSTART;TZID=America/Sao_Paulo:' + start : 'DTSTART;VALUE=DATE:' + start,
-    ini ? 'DTEND;TZID=America/Sao_Paulo:' + end : 'DTEND;VALUE=DATE:' + end,
+    comHora ? 'DTSTART;TZID=America/Sao_Paulo:' + start : 'DTSTART;VALUE=DATE:' + start,
+    comHora ? 'DTEND;TZID=America/Sao_Paulo:' + end : 'DTEND;VALUE=DATE:' + end,
     'SUMMARY:' + escIcs(titulo), local ? 'LOCATION:' + escIcs(local) : '', detalhes ? 'DESCRIPTION:' + escIcs(detalhes) : '',
     'BEGIN:VALARM', 'TRIGGER:-PT2H', 'ACTION:DISPLAY', 'DESCRIPTION:' + escIcs(titulo), 'END:VALARM',
     'END:VEVENT', 'END:VCALENDAR'].filter(Boolean).join('\r\n');
@@ -2278,7 +2312,7 @@ function homeEventCard(it, first){
   const c = it.culto, esq = escalasFor(it), key = `data-kind="${it.kind}" data-id="${esc(it.id)}"`;
   const pessoas = [c && c.preletor && 'Preletor: ' + esc(c.preletor), c && c.dirigente && 'Dirigente: ' + esc(c.dirigente), it.kind === 'eventos' && it.resp && 'Responsável: ' + esc(it.resp)].filter(Boolean);
   return `<article class="card agenda-item${first ? ' next' : ''}${it.cancelado ? ' cancelado' : ''}" data-act="open" ${key}>${tarjaHtml(it)}<div class="item">${tile(it.data)}<div class="body">
-    <div class="row"><span class="chip">${esc(it.tipo)}</span><span class="eyebrow">${it.hora ? esc(it.hora) + ' · ' : ''}${rel(it.data)}</span></div>
+    <div class="row"><span class="chip">${esc(it.tipo)}</span><span class="eyebrow">${quando(it) ? esc(quando(it)) + ' · ' : ''}${relEv(it)}</span></div>
     <h3 style="margin-top:6px"><button class="linkish" data-act="open" ${key}>${esc(it.titulo)}</button></h3>
     ${it.kind === 'eventos' && c && c.tema ? `<div style="margin-top:2px">Tema: <b>${esc(c.tema)}</b></div>` : ''}
     ${it.local || pessoas.length ? `<div class="muted" style="margin-top:4px">${[it.local && 'Local: ' + esc(it.local), ...pessoas].filter(Boolean).join(' · ')}</div>` : ''}
@@ -2296,7 +2330,7 @@ const VIEWS = {
   inicio(){
     if(isLoading(COLS)) return loadingBox();
     const t = todayStr();
-    const next3 = byDate(agendaItems().filter(x => x.data && x.data >= t)).slice(0, 3);
+    const next3 = byDate(agendaItems().filter(x => x.data && fimDe(x) >= t)).slice(0, 3);
     const open = state.tarefas.filter(x => x.status !== 'feito').sort((a,b) => (a.prazo||'9999').localeCompare(b.prazo||'9999'));
     const late = open.filter(x => x.prazo && x.prazo < t).length;
     const avs = [...state.avisos].sort((a,b) => (b.fixado?1:0)-(a.fixado?1:0) || (b.data||'').localeCompare(a.data||'')).slice(0,3);
@@ -2329,7 +2363,7 @@ const VIEWS = {
     if(seg.agenda === 'mes') return head + calendarioHtml();
     const t = todayStr();
     const fut = seg.agenda === 'proximos';
-    const list = byDate(agendaItems().filter(x => x.data && (fut ? x.data >= t : x.data < t)), fut ? 1 : -1);
+    const list = byDate(agendaItems().filter(x => x.data && (fut ? fimDe(x) >= t : fimDe(x) < t)), fut ? 1 : -1);
     if(!list.length) return head + (fut
       ? empty('Agenda livre', 'Cadastre eventos como cultos especiais, retiros, acampamentos, reuniões e ações evangelísticas. Cada compromisso guarda o próprio cronograma, as informações e as observações.', 'eventos', '+ Novo evento')
       : empty('Nada no histórico', 'Os compromissos que já passaram ficam aqui, com o cronograma de cada um.'));
@@ -2340,7 +2374,7 @@ const VIEWS = {
       const nEsc = escalasFor(it).length, c = it.culto;
       const key = `data-kind="${it.kind}" data-id="${esc(it.id)}"`;
       out += `<article class="card agenda-item${it.cancelado ? ' cancelado' : ''}" data-act="open" ${key}>${tarjaHtml(it)}<div class="item">${tile(it.data, !fut)}<div class="body">
-        <div class="row"><span class="chip">${esc(it.tipo)}</span><span class="eyebrow">${it.hora ? esc(it.hora) + ' · ' : ''}${rel(it.data)}</span></div>
+        <div class="row"><span class="chip">${esc(it.tipo)}</span><span class="eyebrow">${quando(it) ? esc(quando(it)) + ' · ' : ''}${relEv(it)}</span></div>
         <h3 style="margin-top:6px"><button class="linkish" data-act="open" ${key}>${esc(it.titulo)}</button></h3>
         ${it.kind === 'eventos' && c && c.tema ? `<div style="margin-top:2px">Tema: <b>${esc(c.tema)}</b></div>` : ''}
         <div class="muted" style="margin-top:4px">${[it.local && 'Local: ' + esc(it.local), it.resp && (it.kind === 'cultos' ? 'Dirigente: ' : 'Responsável: ') + esc(it.resp)].filter(Boolean).join(' · ') || 'Sem responsável definido'}</div>
@@ -2379,7 +2413,7 @@ const VIEWS = {
 
 /* ---------- Forms ---------- */
 const FORMS = {
-  eventos: {title:'evento', fields:[['titulo','Nome do evento','text',1,null,1],['tipo','Tipo','select',0,TIPOS],['local','Local','text'],['data','Data','date',1],['hora','Horário','time'],['responsavel','Responsável','text'],['descricao','Detalhes','textarea',0,null,1]]},
+  eventos: {title:'evento', fields:[['titulo','Nome do evento','text',1,null,1],['tipo','Tipo','select',0,TIPOS],['local','Local','text'],['responsavel','Responsável','text'],['diaTodo','Dia todo','checkbox'],['data','Início','date',1],['hora','Horário de início','time'],['dataFim','Término (se durar mais de um dia)','date'],['horaFim','Horário de término','time'],['descricao','Detalhes','textarea',0,null,1]]},
   escalas: {title:'equipe', head:'equipe', ok:'Equipe salva', fields:[['area','Nome da equipe','combo',1,AREAS],['responsavel','Responsável pela equipe','text'],['data','Data','date',1],['obs','Observação','text',0,null,1]]},
   tarefas: {title:'tarefa', fields:[['titulo','Tarefa','text',1,null,1],['responsavel','Responsável','text'],['prazo','Prazo','date'],['status','Situação','select',0,STATUS.map(s=>s[1])],['prioridade','Prioridade','select',0,PRIOS],['descricao','Detalhes','textarea',0,null,1]]},
   avisos: {title:'aviso', fields:[['titulo','Título','text',1,null,1],['texto','Mensagem','textarea',1,null,1],['autor','Assinado por','text'],['data','Data','date',1],['fixado','Fixar no topo do mural','checkbox']]},
@@ -2429,8 +2463,8 @@ function missingDate(form){ return [...form.querySelectorAll('.dp[data-req="1"]'
 function fieldHtml([name,label,type,req,opts,full], val){
   const id = 'f-' + name, r = req ? ' required' : '';
   if(type === 'date') return `<div class="fld${full ? ' full' : ''}"><label for="${id}-btn">${label}</label>${dateWidget(id, name, val, req)}</div>`;
-  if(type === 'time') return `<div class="fld${full ? ' full' : ''}"><label for="${id}-h">${label}</label>${timeWidget(id, `id="${id}" name="${name}"`, val, label)}</div>`;
-  if(type === 'checkbox') return `<div class="fld check full"><input type="checkbox" id="${id}" name="${name}" ${val ? 'checked' : ''}><label for="${id}" style="text-transform:none;letter-spacing:0;font-size:14px;color:var(--ink)">${label}</label></div>`;
+  if(type === 'time') return `<div class="fld fld-t${full ? ' full' : ''}"><label for="${id}-h">${label}</label>${timeWidget(id, `id="${id}" name="${name}"`, val, label)}</div>`;
+  if(type === 'checkbox') return `<div class="fld check full"><input type="checkbox" id="${id}" name="${name}" ${val ? 'checked' : ''}><label for="${id}" style="text-transform:none;letter-spacing:0;font-size:14px;color:var(--ink);white-space:nowrap;font-family:var(--f-body);font-weight:600">${label}</label></div>`;
   let ctl;
   if(type === 'select') ctl = `<select id="${id}" name="${name}"${r}>${opts.map(o => `<option ${o === val ? 'selected' : ''}>${esc(o)}</option>`).join('')}</select>`;
   else if(type === 'combo') ctl = `<input type="text" id="${id}" name="${name}" value="${esc(val)}"${r} list="dl-${name}" autocomplete="off" placeholder="Digite ou escolha uma sugestão"><datalist id="dl-${name}">${opts.map(o => `<option value="${esc(o)}">`).join('')}</datalist>`;
@@ -2552,6 +2586,7 @@ document.addEventListener('submit', async ev => {
   const {col, id, extra, back} = editing;
   const old = id ? (state[col].find(x => x.id === id) || {}) : {};
   const rec = {...old, ...extra, ...readForm(form, col), id: id || uid()};
+  if(col === 'eventos'){ const erro = ajustaFim(rec); if(erro){ toast(erro); return; } }
   if(!id) rec.criadoEm = new Date().toISOString();
   const btns = form.querySelectorAll('[type=submit]'); btns.forEach(b => b.disabled = true);
   const ok = await save(col, rec);
@@ -2576,7 +2611,8 @@ document.addEventListener('submit', async ev => {
   if(!form.checkValidity()){ form.reportValidity(); return; }
   const it = findItem(detailCtx.kind, detailCtx.id); if(!it) return;
   const rec = {...it.rec};
-  qFields(it).forEach(([name]) => { rec[name] = form.elements[name].value.trim(); });
+  qFields(it).forEach(([name, , type]) => { rec[name] = type === 'checkbox' ? form.elements[name].checked : form.elements[name].value.trim(); });
+  if(it.kind === 'eventos'){ const erro = ajustaFim(rec); if(erro){ toast(erro); return; } }
   const btn = form.querySelector('[type=submit]'); btn.disabled = true; btn.textContent = 'Salvando…';
   if(await save(it.kind, rec)){
     toast('Evento salvo');
@@ -2745,8 +2781,8 @@ async function downloadBackup(csv){
   const q = v => '"' + String(v ?? '').replace(/"/g, '""').replace(/\r?\n/g, ' ') + '"';
   const head = ['Data','Horário','Evento','Tipo','Local','Responsável','Tema','Preletor','Dirigente','Equipes','Detalhes','Observações'];
   const rows = byDate(agendaItems().filter(x => x.data)).map(it => {
-    const c = it.culto || {};
-    return [it.data.split('-').reverse().join('/'), it.hora, it.titulo, it.tipo, it.local, it.resp, c.tema, c.preletor, c.dirigente,
+    const c = it.culto || {}, br = s => s.split('-').reverse().join('/');
+    return [br(it.data) + (fimDe(it) !== it.data ? ' a ' + br(fimDe(it)) : ''), it.diaTodo ? 'Dia todo' : it.hora + (it.horaFim ? '–' + it.horaFim : ''), it.titulo, it.tipo, it.local, it.resp, c.tema, c.preletor, c.dirigente,
       escalasFor(it).map(e => e.area + (e.responsavel ? ' (' + e.responsavel + ')' : '')).join(', '), it.kind === 'eventos' ? it.rec.descricao : '', it.rec.observacoes].map(q).join(';');
   });
   return saveFile(`agenda-youth-${todayStr()}.csv`, new Blob(['﻿' + [head.map(q).join(';'), ...rows].join('\r\n')], {type: 'text/csv'}));
@@ -3010,6 +3046,9 @@ document.addEventListener('click', async ev => {
   else if(act === 'dp-pick'){
     const dp = b.closest('.dp'), v = b.dataset.date, lab = dp.querySelector('.dp-label');
     dp.querySelector('input').value = v; lab.textContent = dpLabel(v); lab.classList.toggle('muted', !v);
+    // Moving the start past the end clears the end date (like Google Agenda keeps them in order).
+    const fimIn = dp.querySelector('input').name === 'data' && b.closest('form') && b.closest('form').elements.dataFim;
+    if(fimIn && fimIn.value && fimIn.value < v){ fimIn.value = ''; const fl = fimIn.closest('.dp').querySelector('.dp-label'); fl.textContent = dpLabel(''); fl.classList.add('muted'); }
     dp.querySelector('.dp-pop').hidden = true; dp.querySelector('.dp-btn').setAttribute('aria-expanded', 'false'); dp.querySelector('.dp-btn').focus();
   }
   else if(act === 'qopen'){ detailCtx.editOpen = true; renderDetail(); const f = $('#qedit input'); if(f) f.focus(); }
